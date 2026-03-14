@@ -29,7 +29,9 @@ function coerceApiHost(params: {
   try {
     const url = new URL(raw);
     return url.origin;
-  } catch {}
+  } catch {
+    /* intentionally suppressed: raw may not be a valid URL, try with https:// prefix */
+  }
 
   try {
     const url = new URL(`https://${raw}`);

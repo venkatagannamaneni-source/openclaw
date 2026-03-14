@@ -103,7 +103,7 @@ export function injectCanvasLiveReload(html: string): string {
           return true;
         }
       }
-    } catch {}
+    } catch { /* best-effort: native bridge may not be available */ }
     return false;
   }
   function sendUserAction(userAction) {
@@ -127,7 +127,7 @@ export function injectCanvasLiveReload(html: string): string {
     ws.onmessage = (ev) => {
       if (String(ev.data || "") === "reload") location.reload();
     };
-  } catch {}
+  } catch { /* best-effort: WebSocket live-reload is optional */ }
 })();
 </script>
 `.trim();

@@ -4,23 +4,23 @@
 
 The codebase guideline is ~500-700 LOC per file, but **25+ files exceed 1,000 LOC**, with several well above 2,000:
 
-| File | LOC | Concern |
-|------|-----|---------|
+| File                                           | LOC   | Concern                                     |
+| ---------------------------------------------- | ----- | ------------------------------------------- |
 | `src/agents/pi-embedded-runner/run/attempt.ts` | 2,392 | Core agent execution logic in a single file |
-| `src/agents/tools/web-search.ts` | 2,222 | Web search tool monolith |
-| `src/memory/qmd-manager.ts` | 2,098 | Memory/QMD management |
-| `src/commands/doctor-config-flow.ts` | 1,977 | Doctor command flow |
-| `src/discord/monitor/native-command.ts` | 1,849 | Discord command handling |
-| `src/discord/monitor/agent-components.ts` | 1,795 | Discord agent UI components |
-| `src/telegram/bot-handlers.ts` | 1,632 | Telegram bot handlers |
-| `src/agents/pi-embedded-runner/run.ts` | 1,594 | Agent runner orchestration |
-| `src/config/io.ts` | 1,559 | Config I/O operations |
-| `src/telegram/send.ts` | 1,524 | Telegram message sending |
-| `src/gateway/server-methods/chat.ts` | 1,495 | Gateway chat methods |
-| `src/agents/subagent-announce.ts` | 1,485 | Subagent announcement |
-| `src/agents/subagent-registry.ts` | 1,473 | Subagent registry |
-| `src/security/audit-extra.sync.ts` | 1,349 | Security audit (sync) |
-| `src/security/audit-extra.async.ts` | 1,314 | Security audit (async) |
+| `src/agents/tools/web-search.ts`               | 2,222 | Web search tool monolith                    |
+| `src/memory/qmd-manager.ts`                    | 2,098 | Memory/QMD management                       |
+| `src/commands/doctor-config-flow.ts`           | 1,977 | Doctor command flow                         |
+| `src/discord/monitor/native-command.ts`        | 1,849 | Discord command handling                    |
+| `src/discord/monitor/agent-components.ts`      | 1,795 | Discord agent UI components                 |
+| `src/telegram/bot-handlers.ts`                 | 1,632 | Telegram bot handlers                       |
+| `src/agents/pi-embedded-runner/run.ts`         | 1,594 | Agent runner orchestration                  |
+| `src/config/io.ts`                             | 1,559 | Config I/O operations                       |
+| `src/telegram/send.ts`                         | 1,524 | Telegram message sending                    |
+| `src/gateway/server-methods/chat.ts`           | 1,495 | Gateway chat methods                        |
+| `src/agents/subagent-announce.ts`              | 1,485 | Subagent announcement                       |
+| `src/agents/subagent-registry.ts`              | 1,473 | Subagent registry                           |
+| `src/security/audit-extra.sync.ts`             | 1,349 | Security audit (sync)                       |
+| `src/security/audit-extra.async.ts`            | 1,314 | Security audit (async)                      |
 
 These files are harder to reason about, test in isolation, and review during PRs. The agent runner (`attempt.ts` at 2,392 LOC) is especially concerning as it's the core execution path.
 
@@ -95,6 +95,7 @@ The configuration system is extensive:
 - Include file resolution with nested configs
 
 This complexity increases the risk of:
+
 - Validation gaps between schema versions
 - Migration bugs when upgrading
 - Difficulty for contributors to understand valid configurations
@@ -185,23 +186,23 @@ This makes these files extremely difficult to refactor, test in isolation, or re
 
 ## Summary
 
-| # | Category | Severity | Count/Scope |
-|---|----------|----------|-------------|
-| 1 | Oversized files (>1000 LOC) | High | 25+ files, worst at 2,392 LOC |
-| 2 | Missing test files | Medium | 60% of source files |
-| 3 | Empty catch blocks | Medium | 50+ occurrences |
-| 4 | `as any` type casts | Low-Medium | 178 occurrences |
-| 5 | Shell execution risks | Medium | 5 locations |
-| 6 | Unvalidated JSON.parse | Low-Medium | 508 occurrences |
-| 7 | Single-user trust model | Design constraint | Architectural |
-| 8 | Config schema complexity | Low | ~200KB, 124 files |
-| 9 | Sandbox defaults off | Medium | Default config |
-| 10 | Technical debt markers | Low | 27 TODOs |
-| 11 | Channel code duplication | Medium | 6+ built-in channels |
-| 12 | Global mutable state / memory leaks | High | 6+ unbounded Maps |
-| 13 | Fire-and-forget promises | Medium | 25+ locations |
-| 14 | Timer / resource leaks | Medium | 4+ unguarded intervals |
-| 15 | Import explosion (tight coupling) | High | 68 imports in critical path |
+| #   | Category                            | Severity          | Count/Scope                   |
+| --- | ----------------------------------- | ----------------- | ----------------------------- |
+| 1   | Oversized files (>1000 LOC)         | High              | 25+ files, worst at 2,392 LOC |
+| 2   | Missing test files                  | Medium            | 60% of source files           |
+| 3   | Empty catch blocks                  | Medium            | 50+ occurrences               |
+| 4   | `as any` type casts                 | Low-Medium        | 178 occurrences               |
+| 5   | Shell execution risks               | Medium            | 5 locations                   |
+| 6   | Unvalidated JSON.parse              | Low-Medium        | 508 occurrences               |
+| 7   | Single-user trust model             | Design constraint | Architectural                 |
+| 8   | Config schema complexity            | Low               | ~200KB, 124 files             |
+| 9   | Sandbox defaults off                | Medium            | Default config                |
+| 10  | Technical debt markers              | Low               | 27 TODOs                      |
+| 11  | Channel code duplication            | Medium            | 6+ built-in channels          |
+| 12  | Global mutable state / memory leaks | High              | 6+ unbounded Maps             |
+| 13  | Fire-and-forget promises            | Medium            | 25+ locations                 |
+| 14  | Timer / resource leaks              | Medium            | 4+ unguarded intervals        |
+| 15  | Import explosion (tight coupling)   | High              | 68 imports in critical path   |
 
 The codebase has strong security fundamentals (timing-safe comparisons, rate limiting, prompt injection protection, credential redaction) but carries significant maintainability and reliability debt. The highest-risk areas are:
 

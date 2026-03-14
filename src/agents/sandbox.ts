@@ -1,3 +1,18 @@
+/**
+ * Sandbox configuration and lifecycle management.
+ *
+ * ## Default isolation
+ *
+ * By default, agent tool execution runs on the host without Docker sandboxing.
+ * When `sandbox.enabled` is true in the config, agent bash commands execute
+ * inside a Docker container with configurable resource limits.
+ *
+ * For production SaaS deployments, enable sandboxing to isolate tenant workloads:
+ * - Set `sandbox.enabled: true` in config
+ * - Use per-tenant workspace directories to prevent cross-tenant filesystem access
+ * - Configure resource limits (CPU, memory) via `sandbox.docker` settings
+ * - The sandbox image defaults to `DEFAULT_SANDBOX_IMAGE` (see constants.ts)
+ */
 export {
   resolveSandboxBrowserConfig,
   resolveSandboxConfigForAgent,

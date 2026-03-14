@@ -190,7 +190,9 @@ function findFile(dir: string, name: string, depth: number): string | null {
         }
       }
     }
-  } catch {}
+  } catch {
+    /* best-effort: directory may not exist or be unreadable */
+  }
   return null;
 }
 
