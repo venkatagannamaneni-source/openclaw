@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import type { OpenClawConfig } from "../../config/config.js";
+import { bestEffortCatch } from "../../infra/best-effort.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { CONFIG_DIR, resolveUserPath } from "../../utils.js";
 import { resolvePluginSkillDirs } from "./plugin-skills.js";
@@ -148,7 +149,7 @@ export function ensureSkillsWatcher(params: { workspaceDir: string; config?: Ope
       if (existing.timer) {
         clearTimeout(existing.timer);
       }
-      void existing.watcher.close().catch(() => {});
+      void existing.watcher.close().catch(bestEffortCatch("close skills watcher"));
     }
     return;
   }
@@ -163,7 +164,7 @@ export function ensureSkillsWatcher(params: { workspaceDir: string; config?: Ope
     if (existing.timer) {
       clearTimeout(existing.timer);
     }
-    void existing.watcher.close().catch(() => {});
+    void existing.watcher.close().catch(bestEffortCatch("close previous skills watcher"));
   }
 
   const watcher = chokidar.watch(watchTargets, {

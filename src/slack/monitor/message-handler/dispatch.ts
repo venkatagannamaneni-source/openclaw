@@ -9,6 +9,7 @@ import { createReplyPrefixOptions } from "../../../channels/reply-prefix.js";
 import { createTypingCallbacks } from "../../../channels/typing.js";
 import { resolveStorePath, updateLastRoute } from "../../../config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";
+import { bestEffortCatch } from "../../../infra/best-effort.js";
 import { resolveAgentOutboundIdentity } from "../../../infra/outbound/identity.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../security/dm-policy-shared.js";
 import { reactSlackMessage, removeSlackReaction } from "../../actions.js";
@@ -153,7 +154,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         await reactSlackMessage(message.channel, message.ts, typingReaction, {
           token: ctx.botToken,
           client: ctx.app.client,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("add Slack typing reaction"));
       }
     },
     stop: async () => {
@@ -170,7 +171,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         await removeSlackReaction(message.channel, message.ts, typingReaction, {
           token: ctx.botToken,
           client: ctx.app.client,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("remove Slack typing reaction"));
       }
     },
     onStartError: (err) => {

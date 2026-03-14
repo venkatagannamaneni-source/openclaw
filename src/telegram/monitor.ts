@@ -3,6 +3,7 @@ import { resolveAgentMaxConcurrent } from "../config/agent-limits.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import { waitForAbortSignal } from "../infra/abort-signal.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { registerUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -91,7 +92,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     if (isNetworkError && isTelegramPollingError && activeRunner && activeRunner.isRunning()) {
       pollingSession?.markForceRestarted();
       pollingSession?.abortActiveFetch();
-      void activeRunner.stop().catch(() => {});
+      void activeRunner.stop().catch(bestEffortCatch("stop telegram polling runner"));
       log(
         `[telegram] Restarting polling after unhandled network error: ${formatErrorMessage(err)}`,
       );
@@ -192,7 +193,9 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     });
     await pollingSession.runUntilAbort();
   } finally {
-    await execApprovalsHandler?.stop().catch(() => {});
+    await execApprovalsHandler
+      ?.stop()
+      .catch(bestEffortCatch("stop telegram exec-approvals handler"));
     unregisterHandler();
   }
 }

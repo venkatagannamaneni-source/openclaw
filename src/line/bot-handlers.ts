@@ -24,6 +24,7 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../config/runtime-group-policy.js";
 import { danger, logVerbose } from "../globals.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 import { resolvePairingIdLabel } from "../pairing/pairing-labels.js";
 import {
@@ -208,7 +209,7 @@ function markLineReplayEventInFlight(candidate: LineReplayCandidate): LineInFlig
   });
   // Prevent unhandled rejection warnings when no concurrent duplicate awaits
   // this in-flight reservation.
-  void promise.catch(() => {});
+  void promise.catch(bestEffortCatch("LINE replay event in-flight reservation"));
   candidate.cache.inFlightEvents.set(candidate.key, promise);
   return { promise, resolve, reject };
 }

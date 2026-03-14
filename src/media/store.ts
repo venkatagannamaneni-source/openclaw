@@ -5,6 +5,7 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { SafeOpenError, readLocalFileSafely } from "../infra/fs-safe.js";
 import { resolvePinnedHostname } from "../infra/net/ssrf.js";
 import { resolveConfigDir } from "../utils.js";
@@ -131,7 +132,7 @@ export async function cleanOldMedia(ttlMs = DEFAULT_TTL_MS, options: CleanOldMed
         if (recursive) {
           const childIsEmpty = await removeExpiredFilesInDir(fullPath);
           if (childIsEmpty) {
-            await fs.rmdir(fullPath).catch(() => {});
+            await fs.rmdir(fullPath).catch(bestEffortCatch("remove empty media subdirectory"));
           }
         }
         continue;
@@ -140,7 +141,7 @@ export async function cleanOldMedia(ttlMs = DEFAULT_TTL_MS, options: CleanOldMed
         continue;
       }
       if (now - stat.mtimeMs > ttlMs) {
-        await fs.rm(fullPath, { force: true }).catch(() => {});
+        await fs.rm(fullPath, { force: true }).catch(bestEffortCatch("remove expired media file"));
       }
     }
     if (!pruneEmptyDirs) {
@@ -160,12 +161,12 @@ export async function cleanOldMedia(ttlMs = DEFAULT_TTL_MS, options: CleanOldMed
     if (stat.isDirectory()) {
       const dirIsEmpty = await removeExpiredFilesInDir(full);
       if (dirIsEmpty) {
-        await fs.rmdir(full).catch(() => {});
+        await fs.rmdir(full).catch(bestEffortCatch("remove empty top-level media directory"));
       }
       continue;
     }
     if (stat.isFile() && now - stat.mtimeMs > ttlMs) {
-      await fs.rm(full, { force: true }).catch(() => {});
+      await fs.rm(full, { force: true }).catch(bestEffortCatch("remove stale media entry"));
     }
   }
 }

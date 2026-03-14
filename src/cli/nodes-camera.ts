@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import { normalizeHostname } from "../infra/net/hostname.js";
 import { resolveCliName } from "./cli-name.js";
@@ -166,7 +167,7 @@ export async function writeUrlToFile(
     }
 
     if (thrown) {
-      await fs.unlink(filePath).catch(() => {});
+      await fs.unlink(filePath).catch(bestEffortCatch("unlink camera snapshot file after error"));
       throw thrown;
     }
   } finally {

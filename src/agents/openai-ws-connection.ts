@@ -15,6 +15,7 @@
 
 import { EventEmitter } from "node:events";
 import WebSocket from "ws";
+import { bestEffortCatch } from "../infra/best-effort.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WebSocket Event Types (Server → Client)
@@ -453,7 +454,7 @@ export class OpenAIWebSocketManager extends EventEmitter<InternalEvents> {
       // attempt, so we intentionally swallow the rejection here to avoid
       // double-scheduling (which would double-increment retryCount per
       // failed reconnect and exhaust the retry budget prematurely).
-      this._openConnection().catch(() => {});
+      this._openConnection().catch(bestEffortCatch("reconnect OpenAI WebSocket"));
     }, delayMs);
   }
 

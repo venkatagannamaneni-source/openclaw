@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { formatCliCommand } from "../cli/command-format.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { ensurePortAvailable, PortInUseError } from "../infra/ports.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
 import { logInfo } from "../logger.js";
@@ -35,7 +36,9 @@ export async function ensureMediaHosted(
   // Decide whether we must start a media server.
   const needsServerStart = await isPortFree(port);
   if (needsServerStart && !opts.startServer) {
-    await fs.rm(saved.path).catch(() => {});
+    await fs
+      .rm(saved.path)
+      .catch(bestEffortCatch("remove saved media file on server-start failure"));
     throw new Error(
       `Media hosting requires the webhook/Funnel server. Start \`${formatCliCommand("openclaw webhook")}\`/\`${formatCliCommand("openclaw up")}\` or re-run with --serve-media.`,
     );

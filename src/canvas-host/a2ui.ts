@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { detectMime } from "../media/mime.js";
 import { resolveFileWithinRoot } from "./file-resolver.js";
 
@@ -204,6 +205,6 @@ export async function handleA2uiHttpRequest(
     res.end(await result.handle.readFile());
     return true;
   } finally {
-    await result.handle.close().catch(() => {});
+    await result.handle.close().catch(bestEffortCatch("close a2ui file handle"));
   }
 }

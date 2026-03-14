@@ -4,6 +4,12 @@ import path from "node:path";
 import type { PluginLogger } from "openclaw/plugin-sdk/diffs";
 import type { DiffArtifactMeta, DiffOutputFormat } from "./types.js";
 
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
+
 const DEFAULT_TTL_MS = 30 * 60 * 1000;
 const MAX_TTL_MS = 6 * 60 * 60 * 1000;
 const SWEEP_FALLBACK_AGE_MS = 24 * 60 * 60 * 1000;
@@ -305,7 +311,9 @@ export class DiffArtifactStore {
   }
 
   private async deleteArtifact(id: string): Promise<void> {
-    await fs.rm(this.artifactDir(id), { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(this.artifactDir(id), { recursive: true, force: true })
+      .catch(bestEffortCatch("diffs delete artifact"));
   }
 
   private resolveWithinRoot(...parts: string[]): string {

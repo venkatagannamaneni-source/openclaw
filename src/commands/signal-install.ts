@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { extractArchive } from "../infra/archive.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveBrewExecutable } from "../infra/brew.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -272,7 +273,7 @@ async function installSignalCliFromRelease(runtime: RuntimeEnv): Promise<SignalI
     };
   }
 
-  await fs.chmod(cliPath, 0o755).catch(() => {});
+  await fs.chmod(cliPath, 0o755).catch(bestEffortCatch("chmod signal-cli binary"));
 
   return { ok: true, cliPath, version };
 }

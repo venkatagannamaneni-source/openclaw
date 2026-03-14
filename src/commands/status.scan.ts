@@ -6,6 +6,7 @@ import { readBestEffortConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { probeGateway } from "../gateway/probe.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
@@ -177,7 +178,7 @@ async function resolveMemoryStatusSnapshot(params: {
     /* best-effort: vector probe is optional for status */
   }
   const status = manager.status();
-  await manager.close?.().catch(() => {});
+  await manager.close?.().catch(bestEffortCatch("close memory search manager after status scan"));
   return { agentId, ...status };
 }
 

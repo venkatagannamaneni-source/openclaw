@@ -2,6 +2,7 @@ import syncFs from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { openBoundaryFile } from "../infra/boundary-file-read.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -270,7 +271,7 @@ async function writeWorkspaceOnboardingState(
     await fs.writeFile(tmpPath, payload, { encoding: "utf-8" });
     await fs.rename(tmpPath, statePath);
   } catch (err) {
-    await fs.unlink(tmpPath).catch(() => {});
+    await fs.unlink(tmpPath).catch(bestEffortCatch("unlink workspace state temp file"));
     throw err;
   }
 }

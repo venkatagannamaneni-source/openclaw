@@ -6,6 +6,12 @@ import { chromium } from "playwright-core";
 import type { DiffRenderOptions, DiffTheme } from "./types.js";
 import { VIEWER_ASSET_PREFIX, getServedViewerAsset } from "./viewer-assets.js";
 
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
+
 const DEFAULT_BROWSER_IDLE_MS = 30_000;
 const SHARED_BROWSER_KEY = "__default__";
 const IMAGE_SIZE_LIMIT_ERROR = "Diff frame did not render within image size limits.";
@@ -227,7 +233,7 @@ export class PlaywrightDiffScreenshotter implements DiffScreenshotter {
               Math.round(Math.min(currentScale, maxScaleForPixels) * 100) / 100,
             );
             if (reducedScale < currentScale - 0.01 && attempt < maxRetries) {
-              await page.close().catch(() => {});
+              await page.close().catch(bestEffortCatch("diffs close page before retry"));
               page = undefined;
               currentScale = reducedScale;
               continue;
@@ -259,7 +265,7 @@ export class PlaywrightDiffScreenshotter implements DiffScreenshotter {
         `Diff PNG/PDF rendering requires a Chromium-compatible browser. Set browser.executablePath or install Chrome/Chromium. ${reason}`,
       );
     } finally {
-      await page?.close().catch(() => {});
+      await page?.close().catch(bestEffortCatch("diffs close page after render"));
       await lease.release();
     }
   }
@@ -427,7 +433,7 @@ async function closeSharedBrowser(): Promise<void> {
   sharedBrowserState = null;
   clearIdleTimer(state);
   const browser = state.browser ?? (await state.browserPromise.catch(() => null));
-  await browser?.close().catch(() => {});
+  await browser?.close().catch(bestEffortCatch("diffs close shared browser"));
 }
 
 async function collectExecutableCandidates(): Promise<string[]> {

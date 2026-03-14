@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { runExec } from "../process/exec.js";
 
 type Sharp = typeof import("sharp");
@@ -138,7 +139,9 @@ async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
   try {
     return await fn(dir);
   } finally {
-    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(dir, { recursive: true, force: true })
+      .catch(bestEffortCatch("cleanup image-ops temp dir"));
   }
 }
 

@@ -5,6 +5,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveChannelMediaMaxBytes, type OpenClawConfig } from "openclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesAccount } from "./accounts.js";
+
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
 import { sendBlueBubblesAttachment } from "./attachments.js";
 import { resolveBlueBubblesMessageId } from "./monitor.js";
 import { getBlueBubblesRuntime } from "./runtime.js";
@@ -161,7 +167,7 @@ async function assertLocalMediaPathAllowed(params: {
       continue;
     } finally {
       if (handle) {
-        await handle.close().catch(() => {});
+        await handle.close().catch(bestEffortCatch("bluebubbles close media file handle"));
       }
     }
   }

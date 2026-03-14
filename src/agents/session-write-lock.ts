@@ -1,6 +1,7 @@
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { getProcessStartTime, isPidAlive } from "../shared/pid-alive.js";
 import { resolveProcessScopedMap } from "../shared/process-scoped-map.js";
 
@@ -176,7 +177,7 @@ function releaseAllLocksSync(): void {
   for (const [sessionFile, held] of HELD_LOCKS) {
     try {
       if (typeof held.handle.close === "function") {
-        void held.handle.close().catch(() => {});
+        void held.handle.close().catch(bestEffortCatch("close session lock file handle"));
       }
     } catch {
       // Ignore errors during cleanup - best effort

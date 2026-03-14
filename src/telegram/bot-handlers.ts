@@ -28,6 +28,7 @@ import type {
   TelegramTopicConfig,
 } from "../config/types.js";
 import { danger, logVerbose, warn } from "../globals.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { MediaFetchError } from "../media/fetch.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
@@ -999,7 +1000,7 @@ export const registerTelegramHandlers = ({
               bot.api.sendMessage(chatId, `⚠️ File too large. Maximum size is ${limitMb}MB.`, {
                 reply_to_message_id: msg.message_id,
               }),
-          }).catch(() => {});
+          }).catch(bestEffortCatch("send telegram oversize media warning"));
         }
         logger.warn({ chatId, error: String(mediaErr) }, oversizeLogMessage);
         return;
@@ -1012,7 +1013,7 @@ export const registerTelegramHandlers = ({
           bot.api.sendMessage(chatId, "⚠️ Failed to download media. Please try again.", {
             reply_to_message_id: msg.message_id,
           }),
-      }).catch(() => {});
+      }).catch(bestEffortCatch("send telegram media fetch failure warning"));
       return;
     }
 
@@ -1068,7 +1069,7 @@ export const registerTelegramHandlers = ({
       operation: "answerCallbackQuery",
       runtime,
       fn: answerCallbackQuery,
-    }).catch(() => {});
+    }).catch(bestEffortCatch("answer telegram callback query"));
     try {
       const data = (callback.data ?? "").trim();
       const callbackMessage = callback.message;

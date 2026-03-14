@@ -13,6 +13,12 @@ import { startTunnel, type TunnelResult } from "./tunnel.js";
 import { VoiceCallWebhookServer } from "./webhook.js";
 import { cleanupTailscaleExposure, setupTailscaleExposure } from "./webhook/tailscale.js";
 
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
+
 export type VoiceCallRuntime = {
   config: VoiceCallConfig;
   provider: VoiceCallProvider;
@@ -42,7 +48,7 @@ function createRuntimeResourceLifecycle(params: {
 
   const runStep = async (step: () => Promise<void>, suppressErrors: boolean) => {
     if (suppressErrors) {
-      await step().catch(() => {});
+      await step().catch(bestEffortCatch("voice-call suppressed step error"));
       return;
     }
     await step();

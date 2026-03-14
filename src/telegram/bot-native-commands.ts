@@ -34,6 +34,7 @@ import type {
   TelegramTopicConfig,
 } from "../config/types.js";
 import { danger, logVerbose } from "../globals.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { getChildLogger } from "../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 import {
@@ -894,6 +895,6 @@ export const registerTelegramNativeCommands = ({
       operation: "setMyCommands",
       runtime,
       fn: () => bot.api.setMyCommands([]),
-    }).catch(() => {});
+    }).catch(bestEffortCatch("clear telegram bot commands"));
   }
 };
