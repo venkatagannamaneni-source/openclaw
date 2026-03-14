@@ -88,8 +88,8 @@ export async function loadOrCreateDeviceIdentity(): Promise<DeviceIdentity> {
         };
       }
     }
-  } catch {
-    // fall through to regenerate
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "fall through to regenerate", err);
   }
 
   const identity = await generateIdentity();

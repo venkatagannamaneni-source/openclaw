@@ -45,7 +45,11 @@ export async function loadControlUiBootstrapConfig(state: ControlUiBootstrapStat
     state.assistantAvatar = normalized.avatar;
     state.assistantAgentId = normalized.agentId ?? null;
     state.serverVersion = parsed.serverVersion ?? null;
-  } catch {
-    // Ignore bootstrap failures; UI will update identity after connecting.
+  } catch (err: unknown) {
+    console.debug(
+      "[swallowed]",
+      "Ignore bootstrap failures; UI will update identity after connecting",
+      err,
+    );
   }
 }

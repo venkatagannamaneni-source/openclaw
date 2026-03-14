@@ -572,8 +572,12 @@ function renderSessionsCard(
     const text = formatSessionListLabel(s);
     try {
       await navigator.clipboard.writeText(text);
-    } catch {
-      // Best effort; clipboard can fail on insecure contexts or denied permission.
+    } catch (err: unknown) {
+      console.debug(
+        "[swallowed]",
+        "Best effort; clipboard can fail on insecure contexts or denied permission",
+        err,
+      );
     }
   };
 

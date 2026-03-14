@@ -190,8 +190,8 @@ function findFile(dir: string, name: string, depth: number): string | null {
         }
       }
     }
-  } catch {
-    /* best-effort: directory may not exist or be unreadable */
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "best-effort: directory may not exist or be unreadable", err);
   }
   return null;
 }

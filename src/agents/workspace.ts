@@ -487,8 +487,8 @@ async function resolveMemoryBootstrapEntries(
     let key = entry.filePath;
     try {
       key = await fs.realpath(entry.filePath);
-    } catch {
-      /* best-effort: path may not exist; use original path as key */
+    } catch (err: unknown) {
+      swallowed("best-effort: path may not exist; use original path as key", err);
     }
     if (seen.has(key)) {
       continue;

@@ -50,8 +50,8 @@ export class PinnedMessages {
       if (Array.isArray(arr)) {
         this._indices = new Set(arr.filter((n) => typeof n === "number"));
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
   }
 

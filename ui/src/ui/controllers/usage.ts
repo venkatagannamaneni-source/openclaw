@@ -84,8 +84,8 @@ function persistLegacyUsageDateParamsCache(cache: Set<string>) {
       LEGACY_USAGE_DATE_PARAMS_STORAGE_KEY,
       JSON.stringify({ unsupportedGatewayKeys: Array.from(cache) }),
     );
-  } catch {
-    // ignore quota/private-mode failures
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore quota/private-mode failures", err);
   }
 }
 
@@ -175,8 +175,8 @@ function toErrorMessage(err: unknown): string {
       if (serialized) {
         return serialized;
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
   }
   return "request failed";

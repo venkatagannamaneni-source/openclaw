@@ -33,8 +33,8 @@ function readStore(): DeviceAuthStore | null {
 function writeStore(store: DeviceAuthStore) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch {
-    // best-effort
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "best-effort", err);
   }
 }
 

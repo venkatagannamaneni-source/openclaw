@@ -4,6 +4,7 @@ import { resolveCanvasHostUrl } from "../../infra/canvas-host-url.js";
 import { removeRemoteNodeInfo } from "../../infra/skills-remote.js";
 import { upsertPresence } from "../../infra/system-presence.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import { isWebchatClient } from "../../utils/message-channel.js";
 import type { AuthRateLimiter } from "../auth-rate-limit.js";
@@ -166,8 +167,8 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     const send = (obj: unknown) => {
       try {
         socket.send(JSON.stringify(obj));
-      } catch {
-        /* ignore */
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     };
 
@@ -189,8 +190,8 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
       }
       try {
         socket.close(code, reason);
-      } catch {
-        /* ignore */
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     };
 

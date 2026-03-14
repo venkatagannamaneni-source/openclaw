@@ -115,8 +115,8 @@ export function stopStt(): void {
     activeRecognition = null;
     try {
       r.stop();
-    } catch {
-      // already stopped
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "already stopped", err);
     }
   }
 }

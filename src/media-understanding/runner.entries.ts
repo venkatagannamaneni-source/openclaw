@@ -16,6 +16,7 @@ import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveProxyFetchFromEnv } from "../infra/net/proxy-fetch.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runExec } from "../process/exec.js";
 import { MediaAttachmentCache } from "./attachments.js";
 import {
@@ -90,8 +91,8 @@ function extractSherpaOnnxText(raw: string): string | null {
           return text.trim();
         }
       }
-    } catch {
-      /* intentionally suppressed: input may not be valid JSON */
+    } catch (err: unknown) {
+      swallowed("intentionally suppressed: input may not be valid JSON", err);
     }
     return null;
   };
@@ -193,8 +194,8 @@ async function resolveCliOutput(params: {
       if (content.trim()) {
         return content.trim();
       }
-    } catch {
-      /* best-effort: output file may not exist or be unreadable */
+    } catch (err: unknown) {
+      swallowed("best-effort: output file may not exist or be unreadable", err);
     }
   }
 

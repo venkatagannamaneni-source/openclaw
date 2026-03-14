@@ -9,6 +9,7 @@ import {
   parseOAuthCallbackInput,
 } from "../agents/chutes-oauth.js";
 import { isLoopbackHost } from "../gateway/net.js";
+import { swallowed } from "../logging/swallowed.js";
 
 type OAuthPrompt = {
   message: string;
@@ -147,8 +148,8 @@ async function waitForLocalCallback(params: {
     timeout = setTimeout(() => {
       try {
         server.close();
-      } catch {
-        /* best-effort: server may already be closed */
+      } catch (err: unknown) {
+        swallowed("best-effort: server may already be closed", err);
       }
       reject(new Error("OAuth callback timeout"));
     }, params.timeoutMs);

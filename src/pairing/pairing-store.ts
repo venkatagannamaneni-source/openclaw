@@ -7,6 +7,7 @@ import type { ChannelId, ChannelPairingAdapter } from "../channels/plugins/types
 import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";
 import { withFileLock as withPathLock } from "../infra/file-lock.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { readJsonFileWithFallback, writeJsonFileAtomically } from "../plugin-sdk/json-store.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
@@ -473,8 +474,8 @@ async function writeAllowFromState(filePath: string, allowFrom: string[]): Promi
   let stat: Awaited<ReturnType<typeof fs.promises.stat>> | null = null;
   try {
     stat = await fs.promises.stat(filePath);
-  } catch {
-    /* best-effort: file may not exist yet */
+  } catch (err: unknown) {
+    swallowed("best-effort: file may not exist yet", err);
   }
   setAllowFromReadCache(filePath, {
     exists: true,
