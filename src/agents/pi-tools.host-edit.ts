@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { AgentToolResult, AgentToolUpdateCallback } from "@mariozechner/pi-agent-core";
+import { swallowed } from "../logging/swallowed.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
 
 /** Resolve path for host edit: expand ~ and resolve relative paths against root. */
@@ -72,8 +73,8 @@ export function wrapHostEditToolWithPostWriteRecovery(
               details: { diff: "", firstChangedLine: undefined },
             } as AgentToolResult<unknown>;
           }
-        } catch {
-          // File read failed or path invalid; rethrow original error.
+        } catch (err: unknown) {
+          swallowed("File read failed or path invalid; rethrow original error", err);
         }
         throw err;
       }

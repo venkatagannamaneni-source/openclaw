@@ -2,6 +2,7 @@ import { loadConfig, resolveGatewayPort } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { resolveGatewayCredentialsFromConfig, trimToUndefined } from "../../gateway/credentials.js";
 import { resolveLeastPrivilegeOperatorScopesForMethod } from "../../gateway/method-scopes.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
 import { readStringParam } from "./common.js";
 
@@ -75,8 +76,11 @@ function validateGatewayUrlOverrideForAgentTools(params: {
     try {
       const remote = canonicalizeToolGatewayWsUrl(remoteUrl);
       remoteKey = remote.key;
-    } catch {
-      // ignore: misconfigured remote url; tools should fall back to default resolution.
+    } catch (err: unknown) {
+      swallowed(
+        "ignore: misconfigured remote url; tools should fall back to default resolution",
+        err,
+      );
     }
   }
 

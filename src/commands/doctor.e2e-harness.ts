@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, vi } from "vitest";
+import { swallowed } from "../logging/swallowed.js";
 import type { MockFn } from "../test-utils/vitest-mock-fn.js";
 import type { LegacyStateDetection } from "./doctor-state-migrations.js";
 
@@ -16,8 +17,8 @@ function setStdinTty(value: boolean | undefined) {
       value,
       configurable: true,
     });
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 }
 

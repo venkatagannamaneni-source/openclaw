@@ -14,6 +14,7 @@ import {
 import { normalizeFingerprint } from "../infra/tls/fingerprint.js";
 import { rawDataToString } from "../infra/ws.js";
 import { logDebug, logError } from "../logger.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
@@ -150,8 +151,8 @@ export class GatewayClient {
       let displayHost = url;
       try {
         displayHost = new URL(url).hostname || url;
-      } catch {
-        // Use raw URL if parsing fails
+      } catch (err: unknown) {
+        swallowed("Use raw URL if parsing fails", err);
       }
       const error = new Error(
         `SECURITY ERROR: Cannot connect to "${displayHost}" over plaintext ws://. ` +

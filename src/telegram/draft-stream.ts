@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { createFinalizableDraftLifecycle } from "../channels/draft-stream-controls.js";
+import { swallowed } from "../logging/swallowed.js";
 import { buildTelegramThreadParams, type TelegramThreadSpec } from "./bot/helpers.js";
 import { isSafeToRetrySendError, isTelegramClientRejection } from "./network-errors.js";
 
@@ -411,8 +412,8 @@ export function createTelegramDraftStream(params: {
               : undefined;
           try {
             await resolvedDraftApi(chatId, clearDraftId, "", clearThreadParams);
-          } catch {
-            // Best-effort cleanup; draft clear failure is cosmetic.
+          } catch (err: unknown) {
+            swallowed("Best-effort cleanup; draft clear failure is cosmetic", err);
           }
         }
         return streamMessageId;

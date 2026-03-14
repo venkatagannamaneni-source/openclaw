@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { resolveStateDir } from "../config/paths.js";
 import { isTruthyEnvValue } from "../infra/env.js";
+import { swallowed } from "../logging/swallowed.js";
 
 const RAW_STREAM_ENABLED = isTruthyEnvValue(process.env.OPENCLAW_RAW_STREAM);
 const RAW_STREAM_PATH =
@@ -18,13 +19,13 @@ export function appendRawStream(payload: Record<string, unknown>) {
     rawStreamReady = true;
     try {
       fs.mkdirSync(path.dirname(RAW_STREAM_PATH), { recursive: true });
-    } catch {
-      // ignore raw stream mkdir failures
+    } catch (err: unknown) {
+      swallowed("ignore raw stream mkdir failures", err);
     }
   }
   try {
     void fs.promises.appendFile(RAW_STREAM_PATH, `${JSON.stringify(payload)}\n`);
-  } catch {
-    // ignore raw stream write failures
+  } catch (err: unknown) {
+    swallowed("ignore raw stream write failures", err);
   }
 }

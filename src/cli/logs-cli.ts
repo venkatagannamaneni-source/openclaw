@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { Command } from "commander";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { parseLogLine } from "../logging/parse-log-line.js";
+import { swallowed } from "../logging/swallowed.js";
 import { formatLocalIsoWithOffset, isValidTimeZone } from "../logging/timestamps.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { clearActiveProgressLine } from "../terminal/progress-line.js";
@@ -141,8 +142,8 @@ function createLogWriters() {
       try {
         clearActiveProgressLine();
         process.stderr.write(`${message}\n`);
-      } catch {
-        // ignore secondary failures while reporting the broken pipe
+      } catch (err: unknown) {
+        swallowed("ignore secondary failures while reporting the broken pipe", err);
       }
     },
   });

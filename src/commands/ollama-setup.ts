@@ -8,6 +8,7 @@ import {
   type OllamaModelWithContext,
 } from "../agents/ollama-models.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { WizardCancelledError, type WizardPrompter } from "../wizard/prompts.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
@@ -158,8 +159,8 @@ async function pullOllamaModelCore(params: {
         } else {
           onStatus?.(chunk.status, null);
         }
-      } catch {
-        // Ignore malformed lines from streaming output.
+      } catch (err: unknown) {
+        swallowed("Ignore malformed lines from streaming output", err);
       }
       return { ok: true };
     };

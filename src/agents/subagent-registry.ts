@@ -14,6 +14,7 @@ import type { SubagentEndReason } from "../context-engine/types.js";
 import { callGateway } from "../gateway/call.js";
 import { onAgentEvent } from "../infra/agent-events.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import { defaultRuntime } from "../runtime.js";
 import { type DeliveryContext, normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { ensureRuntimePluginsLoaded } from "./runtime-plugins.js";
@@ -672,8 +673,8 @@ function restoreSubagentRunsOnce() {
     for (const runId of subagentRuns.keys()) {
       resumeSubagentRun(runId);
     }
-  } catch {
-    // ignore restore failures
+  } catch (err: unknown) {
+    swallowed("ignore restore failures", err);
   }
 }
 
@@ -738,8 +739,8 @@ async function sweepSubagentRuns() {
         },
         timeoutMs: 10_000,
       });
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
   }
   if (mutated) {
@@ -840,8 +841,8 @@ async function safeRemoveAttachmentsDir(entry: SubagentRunRecord): Promise<void>
       return;
     }
     await fs.rm(dirBase, { recursive: true, force: true });
-  } catch {
-    // best effort
+  } catch (err: unknown) {
+    swallowed("best effort", err);
   }
 }
 
@@ -1266,8 +1267,8 @@ async function waitForSubagentCompletion(runId: string, waitTimeoutMs: number) {
       accountId: entry.requesterOrigin?.accountId,
       triggerCleanup: true,
     });
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 }
 

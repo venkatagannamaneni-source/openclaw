@@ -1,3 +1,5 @@
+import { swallowed } from "../../logging/swallowed.js";
+
 type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
 
 export const CACHE_TTL_CUSTOM_TYPE = "openclaw.cache-ttl";
@@ -70,7 +72,7 @@ export function appendCacheTtlTimestamp(sessionManager: unknown, data: CacheTtlE
   }
   try {
     sm.appendCustomEntry(CACHE_TTL_CUSTOM_TYPE, data);
-  } catch {
-    // ignore persistence failures
+  } catch (err: unknown) {
+    swallowed("ignore persistence failures", err);
   }
 }

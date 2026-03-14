@@ -1,5 +1,6 @@
 import { stopBrowserBridgeServer } from "../../browser/bridge-server.js";
 import { loadConfig } from "../../config/config.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { BROWSER_BRIDGES } from "./browser-bridges.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 import { dockerContainerState, execDocker } from "./docker.js";
@@ -45,8 +46,8 @@ async function listSandboxRegistryItems<
         if (result.code === 0) {
           actualImage = result.stdout.trim();
         }
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     }
     const agentId = resolveSandboxAgentId(entry.sessionKey);
@@ -82,8 +83,8 @@ export async function listSandboxBrowsers(): Promise<SandboxBrowserInfo[]> {
 export async function removeSandboxContainer(containerName: string): Promise<void> {
   try {
     await execDocker(["rm", "-f", containerName], { allowFailure: true });
-  } catch {
-    // ignore removal failures
+  } catch (err: unknown) {
+    swallowed("ignore removal failures", err);
   }
   await removeRegistryEntry(containerName);
 }
@@ -91,8 +92,8 @@ export async function removeSandboxContainer(containerName: string): Promise<voi
 export async function removeSandboxBrowserContainer(containerName: string): Promise<void> {
   try {
     await execDocker(["rm", "-f", containerName], { allowFailure: true });
-  } catch {
-    // ignore removal failures
+  } catch (err: unknown) {
+    swallowed("ignore removal failures", err);
   }
   await removeBrowserRegistryEntry(containerName);
 

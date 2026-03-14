@@ -8,6 +8,7 @@ import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
 import { installUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
 import { enableConsoleCapture } from "../logging.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getCommandPathWithRootOptions, getPrimaryCommand, hasHelpOrVersion } from "./argv.js";
 import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 import { tryRouteCli } from "./route.js";
@@ -17,8 +18,8 @@ async function closeCliMemoryManagers(): Promise<void> {
   try {
     const { closeAllMemorySearchManagers } = await import("../memory/search-manager.js");
     await closeAllMemorySearchManagers();
-  } catch {
-    // Best-effort teardown for short-lived CLI processes.
+  } catch (err: unknown) {
+    swallowed("Best-effort teardown for short-lived CLI processes", err);
   }
 }
 

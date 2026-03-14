@@ -4,6 +4,7 @@ import {
   buildExecApprovalPendingReplyPayload,
   buildExecApprovalUnavailableReplyPayload,
 } from "../infra/exec-approval-reply.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import type { PluginHookAfterToolCallEvent } from "../plugins/types.js";
 import { normalizeTextForComparison } from "./pi-embedded-helpers.js";
@@ -135,8 +136,8 @@ function collectMessagingMediaUrlsFromToolResult(result: unknown): string[] {
   if (outputText) {
     try {
       appendFromRecord(JSON.parse(outputText));
-    } catch {
-      // Ignore non-JSON tool output.
+    } catch (err: unknown) {
+      swallowed("Ignore non-JSON tool output", err);
     }
   }
 
@@ -246,8 +247,8 @@ async function emitToolResultOutput(params: {
         }),
       );
       ctx.state.deterministicApprovalPromptSent = true;
-    } catch {
-      // ignore delivery failures
+    } catch (err: unknown) {
+      swallowed("ignore delivery failures", err);
     }
     return;
   }
@@ -264,8 +265,8 @@ async function emitToolResultOutput(params: {
         }),
       );
       ctx.state.deterministicApprovalPromptSent = true;
-    } catch {
-      // ignore delivery failures
+    } catch (err: unknown) {
+      swallowed("ignore delivery failures", err);
     }
     return;
   }
@@ -290,8 +291,8 @@ async function emitToolResultOutput(params: {
   }
   try {
     void ctx.params.onToolResult({ mediaUrls: mediaPaths });
-  } catch {
-    // ignore delivery failures
+  } catch (err: unknown) {
+    swallowed("ignore delivery failures", err);
   }
 }
 

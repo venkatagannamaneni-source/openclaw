@@ -5,6 +5,7 @@ import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js"
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import { CHAT_CHANNEL_ORDER } from "../channels/registry.js";
 import { isTruthyEnvValue } from "../infra/env.js";
+import { swallowed } from "../logging/swallowed.js";
 import { ensurePluginRegistryLoaded } from "./plugin-registry.js";
 
 function dedupe(values: string[]): string[] {
@@ -40,8 +41,8 @@ function loadPrecomputedChannelOptions(): string[] | null {
       );
       return precomputedChannelOptions;
     }
-  } catch {
-    // Fall back to dynamic catalog resolution.
+  } catch (err: unknown) {
+    swallowed("Fall back to dynamic catalog resolution", err);
   }
   precomputedChannelOptions = null;
   return null;

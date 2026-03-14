@@ -38,8 +38,8 @@ async function persistDirectRoom(
   let directContent: MatrixDirectAccountData | null = null;
   try {
     directContent = await client.getAccountData(EventType.Direct);
-  } catch {
-    // Ignore fetch errors and fall back to an empty map.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore fetch errors and fall back to an empty map", err);
   }
   const existing = directContent && !Array.isArray(directContent) ? directContent : {};
   const current = Array.isArray(existing[userId]) ? existing[userId] : [];
@@ -52,8 +52,8 @@ async function persistDirectRoom(
       ...existing,
       [userId]: next,
     });
-  } catch {
-    // Ignore persistence errors.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore persistence errors", err);
   }
 }
 
@@ -79,8 +79,8 @@ async function resolveDirectRoomId(client: MatrixClient, userId: string): Promis
       setDirectRoomCached(trimmed, list[0]);
       return list[0];
     }
-  } catch {
-    // Ignore and fall back.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore and fall back", err);
   }
 
   // 2) Fallback: look for an existing joined room that looks like a 1:1 with the user.
@@ -108,8 +108,8 @@ async function resolveDirectRoomId(client: MatrixClient, userId: string): Promis
         fallbackRoom = roomId;
       }
     }
-  } catch {
-    // Ignore and fall back.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore and fall back", err);
   }
 
   if (fallbackRoom) {

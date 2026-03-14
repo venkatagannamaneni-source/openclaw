@@ -4,6 +4,7 @@ import { createAccountListHelpers } from "../channels/plugins/account-helpers.js
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveOAuthDir } from "../config/paths.js";
 import type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../config/types.js";
+import { swallowed } from "../logging/swallowed.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
@@ -56,8 +57,8 @@ export function listWhatsAppAuthDirs(cfg: OpenClawConfig): string[] {
       }
       authDirs.add(path.join(whatsappDir, entry.name));
     }
-  } catch {
-    // ignore missing dirs
+  } catch (err: unknown) {
+    swallowed("ignore missing dirs", err);
   }
 
   return Array.from(authDirs);

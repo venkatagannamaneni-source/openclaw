@@ -75,8 +75,8 @@ function findPackageRoot(startDir: string, name: string): string | null {
           return dir;
         }
       }
-    } catch {
-      // ignore parse errors and keep walking
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore parse errors and keep walking", err);
     }
     const parent = path.dirname(dir);
     if (parent === dir) {
@@ -104,8 +104,8 @@ function resolveOpenClawRoot(): string {
   try {
     const urlPath = fileURLToPath(import.meta.url);
     candidates.add(path.dirname(urlPath));
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
 
   for (const start of candidates) {

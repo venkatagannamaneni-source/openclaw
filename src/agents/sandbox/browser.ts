@@ -7,6 +7,7 @@ import {
   DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
 } from "../../browser/constants.js";
 import { deriveDefaultBrowserCdpPortRange } from "../../config/port-defaults.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { BROWSER_BRIDGES } from "./browser-bridges.js";
 import { computeSandboxBrowserConfigHash } from "./config-hash.js";
@@ -53,8 +54,8 @@ async function waitForSandboxCdp(params: { cdpPort: number; timeoutMs: number })
       } finally {
         clearTimeout(t);
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
     await new Promise((r) => setTimeout(r, 150));
   }

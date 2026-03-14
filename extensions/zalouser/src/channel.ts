@@ -691,8 +691,8 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
           accountId: account.accountId,
           profile: userInfo,
         });
-      } catch {
-        // ignore probe errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "ignore probe errors", err);
       }
       const statusSink = createAccountStatusSink({
         accountId: ctx.accountId,

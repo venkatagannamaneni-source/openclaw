@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { swallowed } from "../logging/swallowed.js";
 
 export function resolveBundledHooksDir(): string | undefined {
   const override = process.env.OPENCLAW_BUNDLED_HOOKS_DIR?.trim();
@@ -15,8 +16,8 @@ export function resolveBundledHooksDir(): string | undefined {
     if (fs.existsSync(sibling)) {
       return sibling;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   // npm: resolve `<packageRoot>/dist/hooks/bundled` relative to this module (compiled hooks).
@@ -27,8 +28,8 @@ export function resolveBundledHooksDir(): string | undefined {
     if (fs.existsSync(distBundled)) {
       return distBundled;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   // dev: resolve `<packageRoot>/src/hooks/bundled` relative to dist/hooks/bundled-dir.js
@@ -40,8 +41,8 @@ export function resolveBundledHooksDir(): string | undefined {
     if (fs.existsSync(srcBundled)) {
       return srcBundled;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   return undefined;

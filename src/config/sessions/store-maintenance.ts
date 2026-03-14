@@ -3,6 +3,7 @@ import path from "node:path";
 import { parseByteSize } from "../../cli/parse-bytes.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { loadConfig } from "../config.js";
 import type { SessionMaintenanceConfig, SessionMaintenanceMode } from "../types.base.js";
 import type { SessionEntry } from "./types.js";
@@ -131,8 +132,8 @@ export function resolveMaintenanceConfig(): ResolvedSessionMaintenanceConfig {
   let maintenance: SessionMaintenanceConfig | undefined;
   try {
     maintenance = loadConfig().session?.maintenance;
-  } catch {
-    // Config may not be available (e.g. in tests). Use defaults.
+  } catch (err: unknown) {
+    swallowed("Config may not be available (e.g. in tests). Use defaults", err);
   }
   const pruneAfterMs = resolvePruneAfterMs(maintenance);
   const maxDiskBytes = resolveMaxDiskBytes(maintenance);
@@ -319,8 +320,8 @@ export async function rotateSessionFile(
       }
       log.info("cleaned up old session store backups", { deleted: toDelete.length });
     }
-  } catch {
-    // Best-effort cleanup; don't fail the write.
+  } catch (err: unknown) {
+    swallowed("Best-effort cleanup; don't fail the write", err);
   }
 
   return true;

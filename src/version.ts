@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { swallowed } from "./logging/swallowed.js";
 
 declare const __OPENCLAW_VERSION__: string | undefined;
 const CORE_PACKAGE_NAME = "openclaw";
@@ -34,8 +35,8 @@ function readVersionFromJsonCandidates(
           continue;
         }
         return version;
-      } catch {
-        // ignore missing or unreadable candidate
+      } catch (err: unknown) {
+        swallowed("ignore missing or unreadable candidate", err);
       }
     }
     return null;

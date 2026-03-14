@@ -374,8 +374,12 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             `mattermost: slash commands callbackUrl resolved to ${slashCallbackUrl} (loopback) while baseUrl is ${baseUrl}. This MAY be unreachable depending on your deployment. If native slash commands don't work, set channels.mattermost.commands.callbackUrl to a URL reachable from the Mattermost server (e.g. your public reverse proxy URL).`,
           );
         }
-      } catch {
-        // URL parse failed; ignore and continue (we'll fail naturally if registration requests break).
+      } catch (err: unknown) {
+        console.debug(
+          "[swallowed]",
+          "URL parse failed; ignore and continue (we'll fail naturally if registration requests break)",
+          err,
+        );
       }
 
       const commandsToRegister: import("./slash-commands.js").MattermostCommandSpec[] = [
@@ -502,8 +506,12 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         `mattermost: interactions callbackUrl resolved to ${callbackUrl} without channels.mattermost.interactions.allowedSourceIps. For safety, non-loopback callback sources will be rejected until you allowlist the Mattermost server or trusted ingress IPs.`,
       );
     }
-  } catch {
-    // URL parse failed; ignore and continue (we will fail naturally if callbacks cannot be delivered).
+  } catch (err: unknown) {
+    console.debug(
+      "[swallowed]",
+      "URL parse failed; ignore and continue (we will fail naturally if callbacks cannot be delivered)",
+      err,
+    );
   }
 
   const effectiveInteractionSourceIps =

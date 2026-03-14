@@ -30,8 +30,8 @@ function resolveDefaultDbPath(): string {
     if (fs.existsSync(preferred)) {
       return preferred;
     }
-  } catch {
-    // best-effort
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "best-effort", err);
   }
 
   for (const legacy of LEGACY_STATE_DIRS) {
@@ -40,8 +40,8 @@ function resolveDefaultDbPath(): string {
       if (fs.existsSync(candidate)) {
         return candidate;
       }
-    } catch {
-      // best-effort
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "best-effort", err);
     }
   }
 

@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 
 export function resolvePowerShellPath(): string {
   // Prefer PowerShell 7 when available; PS 5.1 lacks "&&" support.
@@ -80,8 +81,8 @@ export function resolveShellFromPath(name: string): string | undefined {
     try {
       fs.accessSync(candidate, fs.constants.X_OK);
       return candidate;
-    } catch {
-      // ignore missing or non-executable entries
+    } catch (err: unknown) {
+      swallowed("ignore missing or non-executable entries", err);
     }
   }
   return undefined;
@@ -174,8 +175,8 @@ export function killProcessTree(pid: number): void {
         stdio: "ignore",
         detached: true,
       });
-    } catch {
-      // ignore errors if taskkill fails
+    } catch (err: unknown) {
+      swallowed("ignore errors if taskkill fails", err);
     }
     return;
   }
@@ -185,8 +186,8 @@ export function killProcessTree(pid: number): void {
   } catch {
     try {
       process.kill(pid, "SIGKILL");
-    } catch {
-      // process already dead
+    } catch (err: unknown) {
+      swallowed("process already dead", err);
     }
   }
 }

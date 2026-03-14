@@ -2,6 +2,7 @@ import fs from "node:fs";
 import JSON5 from "json5";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveStorePath } from "../config/sessions/paths.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getSubagentDepth, parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { resolveDefaultAgentId } from "./agent-scope.js";
 
@@ -41,8 +42,8 @@ function readSessionStore(storePath: string): Record<string, SessionDepthEntry> 
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, SessionDepthEntry>;
     }
-  } catch {
-    // ignore missing/invalid stores
+  } catch (err: unknown) {
+    swallowed("ignore missing/invalid stores", err);
   }
   return {};
 }

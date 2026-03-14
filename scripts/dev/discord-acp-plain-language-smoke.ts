@@ -717,8 +717,12 @@ async function run(): Promise<SuccessResult | FailureResult> {
           targetAgent: args.targetAgent,
         });
         winningBinding = latestCandidates[0];
-      } catch {
-        // Keep polling; file may not exist yet or may be mid-write.
+      } catch (err: unknown) {
+        console.debug(
+          "[swallowed]",
+          "Keep polling; file may not exist yet or may be mid-write",
+          err,
+        );
       }
       if (!winningBinding) {
         await sleep(args.pollMs);
@@ -729,8 +733,8 @@ async function run(): Promise<SuccessResult | FailureResult> {
       let parentRecent: DiscordMessage[] = [];
       try {
         parentRecent = await loadParentRecentMessages({ args, readAuthHeader });
-      } catch {
-        // Best effort diagnostics only.
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Best effort diagnostics only", err);
       }
       return {
         ok: false,
@@ -774,8 +778,12 @@ async function run(): Promise<SuccessResult | FailureResult> {
           const authorId = message.author?.id || "";
           return !senderAuthorId || authorId !== senderAuthorId;
         });
-      } catch {
-        // Keep polling; thread can appear before read permissions settle.
+      } catch (err: unknown) {
+        console.debug(
+          "[swallowed]",
+          "Keep polling; thread can appear before read permissions settle",
+          err,
+        );
       }
       if (!ackMessage) {
         await sleep(args.pollMs);
@@ -786,8 +794,8 @@ async function run(): Promise<SuccessResult | FailureResult> {
       let parentRecent: DiscordMessage[] = [];
       try {
         parentRecent = await loadParentRecentMessages({ args, readAuthHeader });
-      } catch {
-        // Best effort diagnostics only.
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Best effort diagnostics only", err);
       }
 
       return {

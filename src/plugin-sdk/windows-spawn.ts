@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 
 export type WindowsSpawnResolution =
   | "direct"
@@ -180,8 +181,8 @@ function resolveEntrypointFromPackageJson(
       if (isFilePath(entryPath)) {
         return entryPath;
       }
-    } catch {
-      // Ignore malformed package metadata.
+    } catch (err: unknown) {
+      swallowed("Ignore malformed package metadata", err);
     }
   }
 

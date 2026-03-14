@@ -284,8 +284,8 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
     stopped = true;
     try {
       server.close();
-    } catch {
-      // ignore close races while shutting down
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore close races while shutting down", err);
     }
   };
 

@@ -4,6 +4,7 @@ import type { SessionManager } from "@mariozechner/pi-coding-agent";
 import type { TSchema } from "@sinclair/typebox";
 import type { OpenClawConfig } from "../../config/config.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
+import { swallowed } from "../../logging/swallowed.js";
 import {
   hasInterSessionUserProvenance,
   normalizeInputProvenance,
@@ -455,8 +456,8 @@ function readLastModelSnapshot(sessionManager: SessionManager): ModelSnapshotEnt
 function appendModelSnapshot(sessionManager: SessionManager, data: ModelSnapshotEntry): void {
   try {
     sessionManager.appendCustomEntry(MODEL_SNAPSHOT_CUSTOM_TYPE, data);
-  } catch {
-    // ignore persistence failures
+  } catch (err: unknown) {
+    swallowed("ignore persistence failures", err);
   }
 }
 
@@ -488,8 +489,8 @@ function markGoogleTurnOrderingMarker(sessionManager: SessionManager): void {
     sessionManager.appendCustomEntry(GOOGLE_TURN_ORDERING_CUSTOM_TYPE, {
       timestamp: Date.now(),
     });
-  } catch {
-    // ignore marker persistence failures
+  } catch (err: unknown) {
+    swallowed("ignore marker persistence failures", err);
   }
 }
 

@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
@@ -13,6 +14,7 @@ import {
 import { resolveUserPath } from "../utils.js";
 import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
+
 const log = createSubsystemLogger("agent-scope");
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
@@ -278,8 +280,8 @@ function normalizePathForComparison(input: string): string {
   // and canonical path case without forcing case-folding on case-sensitive macOS volumes.
   try {
     normalized = fs.realpathSync.native(resolved);
-  } catch {
-    // Keep lexical path for non-existent directories.
+  } catch (err: unknown) {
+    swallowed("Keep lexical path for non-existent directories", err);
   }
   if (process.platform === "win32") {
     return normalized.toLowerCase();

@@ -1,5 +1,6 @@
 import type { BaseProbeResult } from "../channels/plugins/types.js";
 import type { TelegramNetworkConfig } from "../config/types.telegram.js";
+import { swallowed } from "../logging/swallowed.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
 import { resolveTelegramFetch } from "./fetch.js";
 import { makeProxyFetch } from "./proxy.js";
@@ -201,8 +202,8 @@ export async function probeTelegram(
           };
         }
       }
-    } catch {
-      // ignore webhook errors for probe
+    } catch (err: unknown) {
+      swallowed("ignore webhook errors for probe", err);
     }
 
     result.ok = true;

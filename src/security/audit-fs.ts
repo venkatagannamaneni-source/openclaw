@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { swallowed } from "../logging/swallowed.js";
 import {
   formatIcaclsResetCommand,
   formatWindowsAclSummary,
@@ -87,8 +88,8 @@ export async function inspectPathPermissions(
       const target = await fs.stat(targetPath);
       effectiveMode = typeof target.mode === "number" ? target.mode : st.mode;
       effectiveIsDir = target.isDirectory();
-    } catch {
-      // Keep lstat-derived metadata when target lookup fails.
+    } catch (err: unknown) {
+      swallowed("Keep lstat-derived metadata when target lookup fails", err);
     }
   }
 

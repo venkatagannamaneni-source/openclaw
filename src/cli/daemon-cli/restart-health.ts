@@ -7,6 +7,7 @@ import {
   inspectPortUsage,
   type PortUsage,
 } from "../../infra/ports.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { killProcessTree } from "../../process/kill-tree.js";
 import { sleep } from "../../utils.js";
 
@@ -88,8 +89,8 @@ async function inspectGatewayPortHealth(port: number): Promise<GatewayPortHealth
   if (portUsage.status === "busy") {
     try {
       healthy = await confirmGatewayReachable(port);
-    } catch {
-      // best-effort probe
+    } catch (err: unknown) {
+      swallowed("best-effort probe", err);
     }
   }
 
@@ -152,8 +153,8 @@ export async function inspectGatewayRestart(params: {
   if (!healthy && running && portUsage.status === "busy") {
     try {
       healthy = await confirmGatewayReachable(params.port);
-    } catch {
-      // best-effort probe
+    } catch (err: unknown) {
+      swallowed("best-effort probe", err);
     }
   }
   const staleGatewayPids = Array.from(

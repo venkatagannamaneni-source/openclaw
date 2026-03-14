@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fetchWithSsrFGuard, withStrictGuardedFetchMode } from "../infra/net/fetch-guard.js";
 import type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
+import { swallowed } from "../logging/swallowed.js";
 import { detectMime, extensionForMime } from "./mime.js";
 import { readResponseWithLimit } from "./read-response-with-limit.js";
 
@@ -171,8 +172,8 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
       const parsed = new URL(finalUrl);
       const base = path.basename(parsed.pathname);
       fileNameFromUrl = base || undefined;
-    } catch {
-      // ignore parse errors; leave undefined
+    } catch (err: unknown) {
+      swallowed("ignore parse errors; leave undefined", err);
     }
 
     const headerFileName = parseContentDispositionFileName(res.headers.get("content-disposition"));

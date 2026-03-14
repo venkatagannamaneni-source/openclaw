@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
+import { swallowed } from "../logging/swallowed.js";
 import {
   connectReq,
   ConnectErrorDetailCodes,
@@ -306,8 +307,8 @@ export function registerDefaultAuthTokenSuite(): void {
           maxProtocol: PROTOCOL_VERSION + 2,
         });
         expect(res.ok).toBe(false);
-      } catch {
-        // If the server closed before we saw the frame, that's acceptable.
+      } catch (err: unknown) {
+        swallowed("If the server closed before we saw the frame, that's acceptable", err);
       }
       ws.close();
     });

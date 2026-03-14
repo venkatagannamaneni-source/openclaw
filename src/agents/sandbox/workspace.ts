@@ -2,6 +2,7 @@ import syncFs from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { openBoundaryFile } from "../../infra/boundary-file-read.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { resolveUserPath } from "../../utils.js";
 import {
   DEFAULT_AGENTS_FILENAME,
@@ -52,8 +53,8 @@ export async function ensureSandboxWorkspace(
           } finally {
             syncFs.closeSync(opened.fd);
           }
-        } catch {
-          // ignore missing seed file
+        } catch (err: unknown) {
+          swallowed("ignore missing seed file", err);
         }
       }
     }

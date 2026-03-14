@@ -22,6 +22,7 @@ import {
 } from "../config/sessions.js";
 import type { OpenClawConfig, ReplyToMode, TelegramAccountConfig } from "../config/types.js";
 import { danger, logVerbose } from "../globals.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
@@ -128,8 +129,8 @@ function resolveTelegramReasoningLevel(params: {
     if (level === "on" || level === "stream") {
       return level;
     }
-  } catch {
-    // Fall through to default.
+  } catch (err: unknown) {
+    swallowed("Fall through to default", err);
   }
   return "off";
 }

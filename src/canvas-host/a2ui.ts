@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bestEffortCatch } from "../infra/best-effort.js";
+import { swallowed } from "../logging/swallowed.js";
 import { detectMime } from "../media/mime.js";
 import { resolveFileWithinRoot } from "./file-resolver.js";
 
@@ -52,8 +53,8 @@ async function resolveA2uiRoot(): Promise<string | null> {
       await fs.stat(indexPath);
       await fs.stat(bundlePath);
       return dir;
-    } catch {
-      // try next
+    } catch (err: unknown) {
+      swallowed("try next", err);
     }
   }
   return null;

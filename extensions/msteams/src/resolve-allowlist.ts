@@ -132,8 +132,12 @@ export async function resolveMSTeamsChannelAllowlist(params: {
       let teamChannels: Awaited<ReturnType<typeof listChannelsForTeam>> = [];
       try {
         teamChannels = await listChannelsForTeam(token, graphTeamId);
-      } catch {
-        // API failure (rate limit, network error) — fall back to Graph GUID as team key
+      } catch (err: unknown) {
+        console.debug(
+          "[swallowed]",
+          "API failure (rate limit, network error) — fall back to Graph GUID as team key",
+          err,
+        );
       }
       const generalChannel = teamChannels.find((ch) => ch.displayName?.toLowerCase() === "general");
       // Use the General channel's conversation ID as the team key — this

@@ -23,8 +23,8 @@ function resolveHomeserverKey(homeserver: string): string {
     if (url.host) {
       return sanitizePathSegment(url.host);
     }
-  } catch {
-    // fall through
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "fall through", err);
   }
   return sanitizePathSegment(homeserver);
 }
@@ -96,15 +96,15 @@ export function maybeMigrateLegacyStorage(params: {
   if (hasLegacyStorage) {
     try {
       fs.renameSync(legacy.storagePath, params.storagePaths.storagePath);
-    } catch {
-      // Ignore migration failures; new store will be created.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore migration failures; new store will be created", err);
     }
   }
   if (hasLegacyCrypto) {
     try {
       fs.renameSync(legacy.cryptoPath, params.storagePaths.cryptoPath);
-    } catch {
-      // Ignore migration failures; new store will be created.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore migration failures; new store will be created", err);
     }
   }
 }
@@ -125,7 +125,7 @@ export function writeStorageMeta(params: {
     };
     fs.mkdirSync(params.storagePaths.rootDir, { recursive: true });
     fs.writeFileSync(params.storagePaths.metaPath, JSON.stringify(payload, null, 2), "utf-8");
-  } catch {
-    // ignore meta write failures
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore meta write failures", err);
   }
 }

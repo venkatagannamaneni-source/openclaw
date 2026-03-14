@@ -2,6 +2,7 @@ import { existsSync, statSync } from "node:fs";
 import fs from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 import { sliceUtf16Safe } from "../utils.js";
 import { assertSandboxPath } from "./sandbox-paths.js";
 
@@ -163,8 +164,8 @@ export function resolveWorkdir(workdir: string, warnings: string[]) {
     if (stats.isDirectory()) {
       return workdir;
     }
-  } catch {
-    // ignore, fallback below
+  } catch (err: unknown) {
+    swallowed("ignore, fallback below", err);
   }
   warnings.push(`Warning: workdir "${workdir}" is unavailable; using "${fallback}".`);
   return fallback;

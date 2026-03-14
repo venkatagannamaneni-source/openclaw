@@ -35,8 +35,12 @@ export function parseJsonLines(value: string): AcpxJsonObject[] {
       if (isRecord(parsed)) {
         events.push(parsed);
       }
-    } catch {
-      // Ignore malformed lines; callers handle missing typed events via exit code.
+    } catch (err: unknown) {
+      console.debug(
+        "[swallowed]",
+        "Ignore malformed lines; callers handle missing typed events via exit code",
+        err,
+      );
     }
   }
   return events;

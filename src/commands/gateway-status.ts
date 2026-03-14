@@ -5,6 +5,7 @@ import { discoverGatewayBeacons } from "../infra/bonjour-discovery.js";
 import { resolveSshConfig } from "../infra/ssh-config.js";
 import { parseSshTarget, startSshPortForward } from "../infra/ssh-tunnel.js";
 import { resolveWideAreaDiscoveryDomain } from "../infra/widearea-dns.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
 import {
@@ -185,8 +186,8 @@ export async function gatewayStatusCommand(
         if (tunnel) {
           try {
             await tunnel.stop();
-          } catch {
-            // best-effort
+          } catch (err: unknown) {
+            swallowed("best-effort", err);
           }
         }
       }

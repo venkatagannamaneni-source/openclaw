@@ -39,8 +39,8 @@ export function loadActiveCallsFromStore(storePath: string): {
     try {
       const call = CallRecordSchema.parse(JSON.parse(line));
       callMap.set(call.callId, call);
-    } catch {
-      // Skip invalid lines.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Skip invalid lines", err);
     }
   }
 
@@ -85,8 +85,8 @@ export async function getCallHistoryFromStore(
     try {
       const parsed = CallRecordSchema.parse(JSON.parse(line));
       calls.push(parsed);
-    } catch {
-      // Skip invalid lines.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Skip invalid lines", err);
     }
   }
 

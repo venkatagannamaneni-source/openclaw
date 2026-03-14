@@ -12,6 +12,7 @@ import {
 } from "../../daemon/systemd-hints.js";
 import { isWSLEnv } from "../../infra/wsl.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { colorize } from "../../terminal/theme.js";
 import { shortenHomePath } from "../../utils.js";
@@ -68,8 +69,8 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   try {
     const logFile = getResolvedLoggerSettings().file;
     defaultRuntime.log(`${label("File logs:")} ${infoText(shortenHomePath(logFile))}`);
-  } catch {
-    // ignore missing config/log resolution
+  } catch (err: unknown) {
+    swallowed("ignore missing config/log resolution", err);
   }
   if (service.command?.programArguments?.length) {
     defaultRuntime.log(

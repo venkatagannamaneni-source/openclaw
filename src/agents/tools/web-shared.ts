@@ -1,3 +1,5 @@
+import { swallowed } from "../../logging/swallowed.js";
+
 export type CacheEntry<T> = {
   value: T;
   expiresAt: number;
@@ -145,14 +147,14 @@ export async function readResponseText(
           break;
         }
       }
-    } catch {
-      // Best-effort: return whatever we decoded so far.
+    } catch (err: unknown) {
+      swallowed("Best-effort: return whatever we decoded so far", err);
     } finally {
       if (truncated) {
         try {
           await reader.cancel();
-        } catch {
-          // ignore
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
       }
     }

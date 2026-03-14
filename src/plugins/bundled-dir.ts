@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { swallowed } from "../logging/swallowed.js";
 
 export function resolveBundledPluginsDir(env: NodeJS.ProcessEnv = process.env): string | undefined {
   const override = env.OPENCLAW_BUNDLED_PLUGINS_DIR?.trim();
@@ -15,8 +16,8 @@ export function resolveBundledPluginsDir(env: NodeJS.ProcessEnv = process.env): 
     if (fs.existsSync(sibling)) {
       return sibling;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   // npm/dev: walk up from this module to find `extensions/` at the package root.
@@ -33,8 +34,8 @@ export function resolveBundledPluginsDir(env: NodeJS.ProcessEnv = process.env): 
       }
       cursor = parent;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   return undefined;

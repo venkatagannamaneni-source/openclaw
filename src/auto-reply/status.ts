@@ -22,6 +22,7 @@ import {
 } from "../config/sessions.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { MediaUnderstandingDecision } from "../media-understanding/types.js";
 import { listPluginCommands } from "../plugins/commands.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
@@ -282,8 +283,8 @@ const readUsageFromSessionLog = (
           lastUsage = usage;
         }
         model = parsed.message?.model ?? parsed.model ?? model;
-      } catch {
-        // ignore bad lines (including a truncated first tail line)
+      } catch (err: unknown) {
+        swallowed("ignore bad lines (including a truncated first tail line)", err);
       }
     }
 

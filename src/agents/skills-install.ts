@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveBrewExecutable } from "../infra/brew.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runCommandWithTimeout, type CommandOptions } from "../process/exec.js";
 import { scanDirectoryWithSummary } from "../security/skill-scanner.js";
 import { resolveUserPath } from "../utils.js";
@@ -179,8 +180,8 @@ async function resolveBrewBinDir(timeoutMs: number, brewExe?: string): Promise<s
       if (fs.existsSync(candidate)) {
         return candidate;
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
   }
   return undefined;

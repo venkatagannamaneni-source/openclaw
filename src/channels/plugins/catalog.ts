@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { MANIFEST_KEY } from "../../compat/legacy-names.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { discoverOpenClawPlugins } from "../../plugins/discovery.js";
 import type { OpenClawPackageManifest } from "../../plugins/manifest.js";
 import type { PluginOrigin } from "../../plugins/types.js";
@@ -111,8 +112,8 @@ function loadExternalCatalogEntries(options: CatalogOptions): ExternalCatalogEnt
     try {
       const payload = JSON.parse(fs.readFileSync(resolved, "utf-8")) as unknown;
       entries.push(...parseCatalogEntries(payload));
-    } catch {
-      // Ignore invalid catalog files.
+    } catch (err: unknown) {
+      swallowed("Ignore invalid catalog files", err);
     }
   }
   return entries;

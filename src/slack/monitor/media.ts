@@ -1,5 +1,6 @@
 import type { WebClient as SlackWebClient } from "@slack/web-api";
 import { normalizeHostname } from "../../infra/net/hostname.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { FetchLike } from "../../media/fetch.js";
 import { fetchRemoteMedia } from "../../media/fetch.js";
 import { saveMediaBuffer } from "../../media/store.js";
@@ -319,8 +320,8 @@ export async function resolveSlackAttachmentContent(params: {
             placeholder: `[Forwarded image: ${label}]`,
           });
         }
-      } catch {
-        // Skip images that fail to download
+      } catch (err: unknown) {
+        swallowed("Skip images that fail to download", err);
       }
     }
 

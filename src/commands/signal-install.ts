@@ -7,6 +7,7 @@ import { pipeline } from "node:stream/promises";
 import { extractArchive } from "../infra/archive.js";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveBrewExecutable } from "../infra/brew.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { CONFIG_DIR } from "../utils.js";
@@ -159,8 +160,8 @@ async function resolveBrewSignalCliPath(brewExe: string): Promise<string | null>
         return findSignalCliBinary(prefix);
       }
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
   return null;
 }
@@ -204,8 +205,8 @@ async function installSignalCliViaBrew(runtime: RuntimeEnv): Promise<SignalInsta
     });
     // Output is typically "signal-cli 0.13.24"
     version = vResult.stdout.trim().replace(/^signal-cli\s+/, "") || undefined;
-  } catch {
-    // non-critical; leave version undefined
+  } catch (err: unknown) {
+    swallowed("non-critical; leave version undefined", err);
   }
 
   return { ok: true, cliPath, version };

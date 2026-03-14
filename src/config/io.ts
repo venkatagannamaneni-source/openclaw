@@ -13,6 +13,7 @@ import {
   shouldDeferShellEnvFallback,
   shouldEnableShellEnvFallback,
 } from "../infra/shell-env.js";
+import { swallowed } from "../logging/swallowed.js";
 import { sanitizeTerminalText } from "../terminal/safe-text.js";
 import { VERSION } from "../version.js";
 import { DuplicateAgentDirError, findDuplicateAgentDirs } from "./agent-dirs.js";
@@ -185,8 +186,8 @@ async function tightenStateDirPermissionsIfNeeded(params: {
       return;
     }
     await params.fsModule.promises.chmod(configDir, 0o700);
-  } catch {
-    // Best-effort hardening only; callers still need the config write to proceed.
+  } catch (err: unknown) {
+    swallowed("Best-effort hardening only; callers still need the config write to proceed", err);
   }
 }
 
@@ -575,8 +576,8 @@ async function appendConfigWriteAuditRecord(
       encoding: "utf-8",
       mode: 0o600,
     });
-  } catch {
-    // best-effort
+  } catch (err: unknown) {
+    swallowed("best-effort", err);
   }
 }
 
@@ -1156,8 +1157,8 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           ) as OpenClawConfig;
         }
       }
-    } catch {
-      // If reading the current file fails, write cfg as-is (no env restoration)
+    } catch (err: unknown) {
+      swallowed("If reading the current file fails, write cfg as-is (no env restoration)", err);
     }
 
     const dir = path.dirname(configPath);
@@ -1534,8 +1535,8 @@ export async function writeConfigFile(
     } catch (error) {
       try {
         refreshHandler.clearOnRefreshFailure?.();
-      } catch {
-        // Keep the original refresh failure as the surfaced error.
+      } catch (err: unknown) {
+        swallowed("Keep the original refresh failure as the surfaced error", err);
       }
       const detail = error instanceof Error ? error.message : String(error);
       throw new ConfigRuntimeRefreshError(

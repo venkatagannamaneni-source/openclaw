@@ -7,6 +7,7 @@ import type { ChannelId } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { resolveChannelGroupRequireMention } from "../../config/group-policy.js";
 import type { GroupKeyResolution, SessionEntry } from "../../config/sessions.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import type { TemplateContext } from "../templating.js";
@@ -42,8 +43,8 @@ function resolveDockChannelId(raw?: string | null): ChannelId | null {
     if (getChannelDock(normalized as ChannelId)) {
       return normalized as ChannelId;
     }
-  } catch {
-    // Plugin registry may not be initialized in shared/test contexts.
+  } catch (err: unknown) {
+    swallowed("Plugin registry may not be initialized in shared/test contexts", err);
   }
   try {
     return normalizePluginChannelId(raw) ?? (normalized as ChannelId);

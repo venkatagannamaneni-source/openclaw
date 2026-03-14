@@ -10,6 +10,7 @@ import { renderSystemdUnavailableHints } from "../../daemon/systemd-hints.js";
 import { isSystemdUserServiceAvailable } from "../../daemon/systemd.js";
 import { isGatewaySecretRefUnavailableError } from "../../gateway/credentials.js";
 import { isWSL } from "../../infra/wsl.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { resolveGatewayTokenForDriftCheck } from "./gateway-token-drift.js";
 import {
@@ -157,8 +158,8 @@ export async function runServiceUninstall(params: {
   if (loaded && params.stopBeforeUninstall) {
     try {
       await params.service.stop({ env: process.env, stdout });
-    } catch {
-      // Best-effort stop; final loaded check gates success when enabled.
+    } catch (err: unknown) {
+      swallowed("Best-effort stop; final loaded check gates success when enabled", err);
     }
   }
   try {

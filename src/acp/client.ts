@@ -15,6 +15,7 @@ import {
 } from "@agentclientprotocol/sdk";
 import { isKnownCoreToolId } from "../agents/tool-catalog.js";
 import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
@@ -441,8 +442,8 @@ function resolveSelfEntryPath(): string | null {
     if (fs.existsSync(candidate)) {
       return candidate;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   const argv1 = process.argv[1]?.trim();

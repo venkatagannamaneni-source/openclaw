@@ -6,6 +6,7 @@ import { type BackoffPolicy, computeBackoff, sleepWithAbort } from "../infra/bac
 import { formatErrorMessage } from "../infra/errors.js";
 import { resetDirectoryCache } from "../infra/outbound/target-resolver.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -287,8 +288,8 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
                 preserveRestartAttempts: true,
                 preserveManualStop: true,
               });
-            } catch {
-              // abort or startup failure — next crash will retry
+            } catch (err: unknown) {
+              swallowed("abort or startup failure — next crash will retry", err);
             }
           })
           .finally(() => {
@@ -350,8 +351,8 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         }
         try {
           await task;
-        } catch {
-          // ignore
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
         store.aborts.delete(id);
         store.tasks.delete(id);

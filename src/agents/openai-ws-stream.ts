@@ -32,6 +32,7 @@ import type {
   ToolCall,
 } from "@mariozechner/pi-ai";
 import { createAssistantMessageEventStream, streamSimple } from "@mariozechner/pi-ai";
+import { swallowed } from "../logging/swallowed.js";
 import {
   OpenAIWebSocketManager,
   type ContentPart,
@@ -81,8 +82,8 @@ export function releaseWsSession(sessionId: string): void {
   if (session) {
     try {
       session.manager.close();
-    } catch {
-      // Ignore close errors — connection may already be gone.
+    } catch (err: unknown) {
+      swallowed("Ignore close errors — connection may already be gone", err);
     }
     wsRegistry.delete(sessionId);
   }

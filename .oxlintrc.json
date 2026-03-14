@@ -8,6 +8,7 @@
   },
   "rules": {
     "curly": "error",
+    "no-empty": ["error", { "allowEmptyCatch": false }],
     "eslint-plugin-unicorn/prefer-array-find": "off",
     "eslint/no-await-in-loop": "off",
     "eslint/no-new": "off",

@@ -24,6 +24,7 @@ import type {
   ExecApprovalResolved,
 } from "../../infra/exec-approvals.js";
 import { logDebug, logError } from "../../logger.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { compileSafeRegex, testRegexWithBoundedInput } from "../../security/safe-regex.js";
@@ -800,8 +801,8 @@ export class ExecApprovalButton extends Button {
           content: "This approval is no longer valid.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -815,8 +816,8 @@ export class ExecApprovalButton extends Button {
           content: "⛔ You are not authorized to approve exec requests.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -833,8 +834,8 @@ export class ExecApprovalButton extends Button {
     // the approval card in-place with the final state.
     try {
       await interaction.acknowledge();
-    } catch {
-      // Interaction may have expired, try to continue anyway
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired, try to continue anyway", err);
     }
 
     const ok = await this.ctx.handler.resolveApproval(parsed.approvalId, parsed.action);
@@ -845,8 +846,8 @@ export class ExecApprovalButton extends Button {
           content: `Failed to submit approval decision for **${decisionLabel}**. The request may have expired or already been resolved.`,
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
     }
     // On success, the handleApprovalResolved event will update the message with the final result

@@ -16,6 +16,7 @@ import { logVerbose } from "../../globals.js";
 import { getSessionBindingService } from "../../infra/outbound/session-binding-service.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { prefixSystemMessage } from "../../infra/system-message.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { applyMediaUnderstanding } from "../../media-understanding/apply.js";
 import {
   normalizeAttachmentPath,
@@ -91,8 +92,8 @@ async function resolveAcpAttachments(ctx: FinalizedMsgContext): Promise<AcpTurnA
         mediaType,
         data: buf.toString("base64"),
       });
-    } catch {
-      // Skip unreadable files. Text content should still be delivered.
+    } catch (err: unknown) {
+      swallowed("Skip unreadable files. Text content should still be delivered", err);
     }
   }
   return results;

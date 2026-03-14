@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseStrictInteger, parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   GATEWAY_LAUNCH_AGENT_LABEL,
   resolveGatewayServiceDescription,
@@ -129,8 +130,8 @@ async function ensureSecureDirectory(targetPath: string): Promise<void> {
     if (tightenedMode !== mode) {
       await fs.chmod(targetPath, tightenedMode);
     }
-  } catch {
-    // Best effort: keep install working even if chmod/stat is unavailable.
+  } catch (err: unknown) {
+    swallowed("Best effort: keep install working even if chmod/stat is unavailable", err);
   }
 }
 
@@ -261,8 +262,8 @@ export async function findLegacyLaunchAgents(env: GatewayServiceEnv): Promise<Le
     try {
       await fs.access(plistPath);
       exists = true;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
     if (loaded || exists) {
       results.push({ label, plistPath, loaded, exists });
@@ -285,8 +286,8 @@ export async function uninstallLegacyLaunchAgents({
   const trashDir = path.posix.join(home, ".Trash");
   try {
     await fs.mkdir(trashDir, { recursive: true });
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   for (const agent of agents) {
@@ -386,8 +387,8 @@ export async function installLaunchAgent({
     await execLaunchctl(["unload", legacyPlistPath]);
     try {
       await fs.unlink(legacyPlistPath);
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
   }
 

@@ -101,8 +101,8 @@ export async function sendGroupMessageWithStory({
     try {
       // scot('ud', n) formats a number as @ud with dots
       formattedReplyId = scot("ud", BigInt(replyToId));
-    } catch {
-      // Fall back to raw ID if formatting fails
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Fall back to raw ID if formatting fails", err);
     }
   }
 

@@ -1,4 +1,5 @@
 import { stopBrowserBridgeServer } from "../../browser/bridge-server.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { BROWSER_BRIDGES } from "./browser-bridges.js";
 import { dockerContainerState, execDocker } from "./docker.js";
@@ -52,8 +53,8 @@ async function pruneSandboxRegistryEntries<TEntry extends PruneableRegistryEntry
       await execDocker(["rm", "-f", entry.containerName], {
         allowFailure: true,
       });
-    } catch {
-      // ignore prune failures
+    } catch (err: unknown) {
+      swallowed("ignore prune failures", err);
     } finally {
       await params.remove(entry.containerName);
       await params.onRemoved?.(entry);

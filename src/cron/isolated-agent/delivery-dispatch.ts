@@ -9,6 +9,7 @@ import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { resolveAgentOutboundIdentity } from "../../infra/outbound/identity.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
 import { logWarn } from "../../logger.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { CronJob, CronRunTelemetry } from "../types.js";
 import type { DeliveryTargetResolution } from "./delivery-target.js";
 import { pickSummaryFromOutput } from "./helpers.js";
@@ -306,8 +307,8 @@ export async function dispatchCronDelivery(
           },
           timeoutMs: 10_000,
         });
-      } catch {
-        // Best-effort; direct delivery result should still be returned.
+      } catch (err: unknown) {
+        swallowed("Best-effort; direct delivery result should still be returned", err);
       }
     };
 

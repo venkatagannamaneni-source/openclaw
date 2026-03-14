@@ -20,6 +20,7 @@ import {
 } from "../daemon/service-audit.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { uninstallLegacySystemdUnits } from "../daemon/systemd.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { buildGatewayInstallPlan } from "./daemon-install-helpers.js";
@@ -77,8 +78,8 @@ async function cleanupLegacyLaunchdService(params: {
   const trashDir = path.join(os.homedir(), ".Trash");
   try {
     await fs.mkdir(trashDir, { recursive: true });
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   try {

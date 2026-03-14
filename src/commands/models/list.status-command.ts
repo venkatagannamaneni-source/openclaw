@@ -37,6 +37,7 @@ import {
   type UsageProviderId,
 } from "../../infra/provider-usage.js";
 import { getShellEnvAppliedKeys, shouldEnableShellEnvFallback } from "../../infra/shell-env.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { getTerminalTableWidth, renderTable } from "../../terminal/table.js";
 import { colorize, theme } from "../../terminal/theme.js";
@@ -574,8 +575,8 @@ export async function modelsStatusCommand(
             usageByProvider.set(snapshot.provider, formatted);
           }
         }
-      } catch {
-        // ignore usage failures
+      } catch (err: unknown) {
+        swallowed("ignore usage failures", err);
       }
     }
 

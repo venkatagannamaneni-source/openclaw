@@ -2,6 +2,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import type { DoctorMemoryStatusPayload } from "../gateway/server-methods/doctor.js";
 import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { formatHealthCheckFailure } from "./health-format.js";
@@ -56,8 +57,8 @@ export async function checkGatewayHealth(params: {
           "Channel warnings",
         );
       }
-    } catch {
-      // ignore: doctor already reported gateway health
+    } catch (err: unknown) {
+      swallowed("ignore: doctor already reported gateway health", err);
     }
   }
 

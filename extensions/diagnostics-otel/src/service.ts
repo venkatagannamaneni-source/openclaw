@@ -297,8 +297,8 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
                   bindings = parsed as Record<string, unknown>;
                   numericArgs.shift();
                 }
-              } catch {
-                // ignore malformed json bindings
+              } catch (err: unknown) {
+                console.debug("[swallowed]", "ignore malformed json bindings", err);
               }
             }
 

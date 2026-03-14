@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 import { isBunRuntime, isNodeRuntime } from "./runtime-binary.js";
 
 type GatewayProgramArgs = {
@@ -30,8 +31,8 @@ async function resolveCliEntrypointPathForService(): Promise<string> {
       try {
         await fs.access(normalized);
         return normalized;
-      } catch {
-        // Fall through to return resolvedPath
+      } catch (err: unknown) {
+        swallowed("Fall through to return resolvedPath", err);
       }
     }
     return resolvedPath;
@@ -43,8 +44,8 @@ async function resolveCliEntrypointPathForService(): Promise<string> {
     try {
       await fs.access(candidate);
       return candidate;
-    } catch {
-      // keep going
+    } catch (err: unknown) {
+      swallowed("keep going", err);
     }
   }
 

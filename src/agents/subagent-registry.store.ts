@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import { resolveStateDir } from "../config/paths.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
+import { swallowed } from "../logging/swallowed.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
@@ -110,8 +111,8 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
   if (migrated) {
     try {
       saveSubagentRegistryToDisk(out);
-    } catch {
-      // ignore migration write failures
+    } catch (err: unknown) {
+      swallowed("ignore migration write failures", err);
     }
   }
   return out;

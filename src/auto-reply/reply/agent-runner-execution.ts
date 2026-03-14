@@ -23,6 +23,7 @@ import {
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import {
   isMarkdownCapableMessageChannel,
@@ -567,8 +568,8 @@ export async function runAgentTurnWithFallback(params: {
             const transcriptPath = resolveSessionTranscriptPath(corruptedSessionId);
             try {
               fs.unlinkSync(transcriptPath);
-            } catch {
-              // Ignore if file doesn't exist
+            } catch (err: unknown) {
+              swallowed("Ignore if file doesn't exist", err);
             }
           }
 

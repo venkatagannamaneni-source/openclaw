@@ -3,6 +3,7 @@ import { browserAct, browserConsoleMessages } from "../../browser/client-actions
 import { browserSnapshot, browserTabs } from "../../browser/client.js";
 import { DEFAULT_AI_SNAPSHOT_MAX_CHARS } from "../../browser/constants.js";
 import { loadConfig } from "../../config/config.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { wrapExternalContent } from "../../security/external-content.js";
 import { imageResultFromFile, jsonResult } from "./common.js";
 
@@ -334,8 +335,8 @@ export async function executeActAction(params: {
                 profile,
               });
           return jsonResult(retryResult);
-        } catch {
-          // Fall through to explicit stale-target guidance.
+        } catch (err: unknown) {
+          swallowed("Fall through to explicit stale-target guidance", err);
         }
       }
       if (!tabs.length) {

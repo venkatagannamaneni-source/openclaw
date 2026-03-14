@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_AGENTS_FILENAME } from "../agents/workspace.js";
+import { swallowed } from "../logging/swallowed.js";
 import { shortenHomePath } from "../utils.js";
 
 export const MEMORY_SYSTEM_PROMPT = [
@@ -19,8 +20,8 @@ export async function shouldSuggestMemorySystem(workspaceDir: string): Promise<b
     try {
       await fs.promises.access(memoryPath);
       return false;
-    } catch {
-      // keep scanning
+    } catch (err: unknown) {
+      swallowed("keep scanning", err);
     }
   }
 
@@ -30,8 +31,8 @@ export async function shouldSuggestMemorySystem(workspaceDir: string): Promise<b
     if (/memory\.md/i.test(content)) {
       return false;
     }
-  } catch {
-    // no AGENTS.md or unreadable; treat as missing memory guidance
+  } catch (err: unknown) {
+    swallowed("no AGENTS.md or unreadable; treat as missing memory guidance", err);
   }
 
   return true;

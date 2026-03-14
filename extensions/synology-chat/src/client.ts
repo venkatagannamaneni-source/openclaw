@@ -74,8 +74,8 @@ export async function sendMessage(
       const ok = await doPost(incomingUrl, body, allowInsecureSsl);
       lastSendTime = Date.now();
       if (ok) return true;
-    } catch {
-      // will retry
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "will retry", err);
     }
 
     if (attempt < maxRetries - 1) {

@@ -3,6 +3,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { loadConfig } from "../config/config.js";
 import { danger, info, success } from "../globals.js";
 import { logInfo } from "../logger.js";
+import { swallowed } from "../logging/swallowed.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { createWaSocket, formatError, logoutWeb, waitForWaConnection } from "./session.js";
@@ -35,8 +36,8 @@ export async function loginWeb(
       );
       try {
         sock.ws?.close();
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
       const retry = await createWaSocket(false, verbose, {
         authDir: account.authDir,
@@ -70,8 +71,8 @@ export async function loginWeb(
     setTimeout(() => {
       try {
         sock.ws?.close();
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     }, 500);
   }

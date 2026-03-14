@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { bestEffortCatch } from "../infra/best-effort.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runExec } from "../process/exec.js";
 
 type Sharp = typeof import("sharp");
@@ -450,8 +451,8 @@ export async function optimizeImageToPng(
             compressionLevel,
           };
         }
-      } catch {
-        // Continue trying other size/compression combinations.
+      } catch (err: unknown) {
+        swallowed("Continue trying other size/compression combinations", err);
       }
     }
   }

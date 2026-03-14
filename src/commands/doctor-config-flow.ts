@@ -26,6 +26,7 @@ import {
   isTrustedSafeBinPath,
   normalizeTrustedSafeBinDirs,
 } from "../infra/exec-safe-bin-trust.js";
+import { swallowed } from "../logging/swallowed.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import {
   formatChannelAccountsDefaultPath,
@@ -381,8 +382,8 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: OpenClawConfig): Promi
         if (id) {
           return id;
         }
-      } catch {
-        // ignore and try next token
+      } catch (err: unknown) {
+        swallowed("ignore and try next token", err);
       } finally {
         clearTimeout(timeout);
       }
@@ -1614,8 +1615,8 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
   try {
     await fs.access(targetPath);
     return changes;
-  } catch {
-    // missing config
+  } catch (err: unknown) {
+    swallowed("missing config", err);
   }
 
   const legacyCandidates = [
@@ -1630,8 +1631,8 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
       await fs.access(candidate);
       legacyPath = candidate;
       break;
-    } catch {
-      // continue
+    } catch (err: unknown) {
+      swallowed("continue", err);
     }
   }
   if (!legacyPath) {
@@ -1642,8 +1643,8 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
   try {
     await fs.copyFile(legacyPath, targetPath, fs.constants.COPYFILE_EXCL);
     changes.push(`Migrated legacy config: ${legacyPath} -> ${targetPath}`);
-  } catch {
-    // If it already exists, skip silently.
+  } catch (err: unknown) {
+    swallowed("If it already exists, skip silently", err);
   }
 
   return changes;

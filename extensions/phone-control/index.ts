@@ -153,8 +153,8 @@ async function writeArmState(statePath: string, state: ArmStateFile | null): Pro
   if (!state) {
     try {
       await fs.unlink(statePath);
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
     return;
   }

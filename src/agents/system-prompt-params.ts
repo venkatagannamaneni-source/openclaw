@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
 import { findGitRoot } from "../infra/git-root.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   formatUserTime,
   resolveUserTimeFormat,
@@ -72,8 +73,8 @@ function resolveRepoRoot(params: {
       if (stat.isDirectory()) {
         return resolved;
       }
-    } catch {
-      // ignore invalid config path
+    } catch (err: unknown) {
+      swallowed("ignore invalid config path", err);
     }
   }
   const candidates = [params.workspaceDir, params.cwd]

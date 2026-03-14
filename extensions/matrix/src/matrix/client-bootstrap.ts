@@ -32,8 +32,8 @@ export async function createPreparedMatrixClient(opts: {
     try {
       const joinedRooms = await client.getJoinedRooms();
       await (client.crypto as MatrixCryptoPrepare).prepare(joinedRooms);
-    } catch {
-      // Ignore crypto prep failures for one-off requests.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore crypto prep failures for one-off requests", err);
     }
   }
   await startMatrixClientWithGrace({

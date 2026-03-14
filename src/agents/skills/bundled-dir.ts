@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveOpenClawPackageRootSync } from "../../infra/openclaw-root.js";
+import { swallowed } from "../../logging/swallowed.js";
 
 function looksLikeSkillsDir(dir: string): boolean {
   try {
@@ -49,8 +50,8 @@ export function resolveBundledSkillsDir(
     if (fs.existsSync(sibling)) {
       return sibling;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   // npm/dev: resolve `<packageRoot>/skills` relative to this module.
@@ -82,8 +83,8 @@ export function resolveBundledSkillsDir(
       }
       current = next;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   return undefined;

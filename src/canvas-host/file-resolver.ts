@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { SafeOpenError, openFileWithinRoot, type SafeOpenResult } from "../infra/fs-safe.js";
+import { swallowed } from "../logging/swallowed.js";
 
 export function normalizeUrlPath(rawPath: string): string {
   const decoded = decodeURIComponent(rawPath || "/");
@@ -42,8 +43,8 @@ export async function resolveFileWithinRoot(
     if (st.isDirectory()) {
       return await tryOpen(path.posix.join(rel, "index.html"));
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   return await tryOpen(rel);

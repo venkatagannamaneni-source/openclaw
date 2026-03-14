@@ -2,6 +2,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
 import { callGateway } from "../gateway/call.js";
 import { validateSecretsResolveResult } from "../gateway/protocol/index.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   analyzeCommandSecretAssignmentsFromSnapshot,
   type UnresolvedCommandSecretAssignment,
@@ -490,8 +491,8 @@ export async function resolveCommandSecretRefsViaGateway(params: {
         targetStatesByPath: fallback.targetStatesByPath,
         hadUnresolvedTargets: fallback.hadUnresolvedTargets,
       };
-    } catch {
-      // Fall through to original gateway-specific error reporting.
+    } catch (err: unknown) {
+      swallowed("Fall through to original gateway-specific error reporting", err);
     }
     if (isUnsupportedSecretsResolveError(err)) {
       throw new Error(

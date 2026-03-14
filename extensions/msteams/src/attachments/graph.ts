@@ -156,8 +156,8 @@ function normalizeGraphAttachment(att: GraphAttachment): MSTeamsAttachmentLike {
   if (typeof content === "string") {
     try {
       content = JSON.parse(content);
-    } catch {
-      // Keep as raw string if it's not JSON.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Keep as raw string if it's not JSON", err);
     }
   }
   return {
@@ -223,8 +223,8 @@ async function downloadGraphHostedContent(params: {
         contentType: saved.contentType,
         placeholder: inferPlaceholder({ contentType: saved.contentType }),
       });
-    } catch {
-      // Ignore save failures.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore save failures", err);
     }
   }
 
@@ -329,16 +329,16 @@ export async function downloadMSTeamsGraphMedia(params: {
             });
             sharePointMedia.push(media);
             downloadedReferenceUrls.add(shareUrl);
-          } catch {
-            // Ignore SharePoint download failures.
+          } catch (err: unknown) {
+            console.debug("[swallowed]", "Ignore SharePoint download failures", err);
           }
         }
       }
     } finally {
       await release();
     }
-  } catch {
-    // Ignore message fetch failures.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore message fetch failures", err);
   }
 
   const hosted = await downloadGraphHostedContent({

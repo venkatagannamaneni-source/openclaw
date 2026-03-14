@@ -4,6 +4,7 @@ import path from "node:path";
 import JSON5 from "json5";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { expandHomePrefix } from "../infra/home-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { CONFIG_DIR } from "../utils.js";
 import type { CronStoreFile } from "./types.js";
 
@@ -97,8 +98,8 @@ export async function saveCronStore(
       const backupPath = `${storePath}.bak`;
       await fs.promises.copyFile(storePath, backupPath);
       await setSecureFileMode(backupPath);
-    } catch {
-      // best-effort
+    } catch (err: unknown) {
+      swallowed("best-effort", err);
     }
   }
   await renameWithRetry(tmp, storePath);

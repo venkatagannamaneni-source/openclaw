@@ -10,6 +10,7 @@ import {
 } from "../../infra/restart-sentinel.js";
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { stringEnum } from "../schema/typebox.js";
 import { type AnyAgentTool, jsonResult, readStringParam } from "./common.js";
 import { callGatewayTool, readGatewayCallOptions } from "./gateway.js";
@@ -118,8 +119,8 @@ export function createGatewayTool(opts?: {
         };
         try {
           await writeRestartSentinel(payload);
-        } catch {
-          // ignore: sentinel is best-effort
+        } catch (err: unknown) {
+          swallowed("ignore: sentinel is best-effort", err);
         }
         log.info(
           `gateway tool: restart requested (delayMs=${delayMs ?? "default"}, reason=${reason ?? "none"})`,

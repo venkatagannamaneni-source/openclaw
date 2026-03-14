@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { SafeOpenError, readLocalFileSafely } from "../infra/fs-safe.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
+import { swallowed } from "../logging/swallowed.js";
 import { type MediaKind, maxBytesForKind } from "../media/constants.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 import {
@@ -472,8 +473,8 @@ export async function optimizeImageToJpeg(
             quality,
           };
         }
-      } catch {
-        // Continue trying other size/quality combinations
+      } catch (err: unknown) {
+        swallowed("Continue trying other size/quality combinations", err);
       }
     }
   }

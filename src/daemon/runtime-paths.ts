@@ -4,6 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { isSupportedNodeVersion } from "../infra/runtime-guard.js";
 import { resolveStableNodePath } from "../infra/stable-node-path.js";
+import { swallowed } from "../logging/swallowed.js";
 
 const VERSION_MANAGER_MARKERS = [
   "/.nvm/",
@@ -115,8 +116,8 @@ export async function resolveSystemNodePath(
     try {
       await fs.access(candidate);
       return candidate;
-    } catch {
-      // keep going
+    } catch (err: unknown) {
+      swallowed("keep going", err);
     }
   }
   return null;

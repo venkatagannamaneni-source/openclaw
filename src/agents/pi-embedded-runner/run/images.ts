@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ImageContent } from "@mariozechner/pi-ai";
+import { swallowed } from "../../../logging/swallowed.js";
 import { resolveUserPath } from "../../../utils.js";
 import { loadWebMedia } from "../../../web/media.js";
 import type { ImageSanitizationLimits } from "../../image-sanitization.js";
@@ -162,8 +163,8 @@ export function detectImageReferences(prompt: string): DetectedImageRef[] {
     try {
       const resolved = fileURLToPath(raw);
       refs.push({ raw, type: "path", resolved });
-    } catch {
-      // Skip malformed file:// URLs
+    } catch (err: unknown) {
+      swallowed("Skip malformed file:// URLs", err);
     }
   }
 

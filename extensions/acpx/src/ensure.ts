@@ -65,8 +65,8 @@ function resolveVersionFromPackage(command: string, cwd: string): string | null 
       if (parsed.name === "acpx" && typeof parsed.version === "string" && parsed.version.trim()) {
         return parsed.version.trim();
       }
-    } catch {
-      // no-op; continue walking up
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "no-op; continue walking up", err);
     }
     const parent = path.dirname(current);
     if (parent === current) {

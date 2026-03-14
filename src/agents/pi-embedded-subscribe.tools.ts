@@ -1,5 +1,6 @@
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import { normalizeTargetForProvider } from "../infra/outbound/target-normalization.js";
+import { swallowed } from "../logging/swallowed.js";
 import { splitMediaFromOutput } from "../media/parse.js";
 import { truncateUtf16Safe } from "../utils.js";
 import { collectTextContentBlocks } from "./content-blocks.js";
@@ -280,8 +281,8 @@ export function extractToolErrorMessage(result: unknown): string | undefined {
     if (fromJson) {
       return fromJson;
     }
-  } catch {
-    // Fall through to first-line text fallback.
+  } catch (err: unknown) {
+    swallowed("Fall through to first-line text fallback", err);
   }
   return normalizeToolErrorText(text);
 }

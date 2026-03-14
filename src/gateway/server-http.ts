@@ -12,6 +12,7 @@ import { CANVAS_WS_PATH, handleA2uiHttpRequest } from "../canvas-host/a2ui.js";
 import type { CanvasHostHandler } from "../canvas-host/server.js";
 import { loadConfig } from "../config/config.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
 import { handleSlackHttpRequest } from "../slack/http/index.js";
 import {
@@ -121,8 +122,8 @@ function resolveMattermostSlashCallbackPaths(
       if (pathname && isMattermostCommandCallbackPath(pathname)) {
         callbackPaths.add(pathname);
       }
-    } catch {
-      // Ignore invalid callback URLs in config and keep default path behavior.
+    } catch (err: unknown) {
+      swallowed("Ignore invalid callback URLs in config and keep default path behavior", err);
     }
   };
 

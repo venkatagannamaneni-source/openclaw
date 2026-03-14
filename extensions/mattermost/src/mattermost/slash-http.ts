@@ -321,8 +321,8 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
         await sendMessageMattermost(to, "Sorry, something went wrong processing that command.", {
           accountId: account.accountId,
         });
-      } catch {
-        // best-effort error reply
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "best-effort error reply", err);
       }
     }
   };

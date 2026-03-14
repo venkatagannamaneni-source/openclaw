@@ -12,6 +12,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { logVerbose } from "../globals.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
+import { swallowed } from "../logging/swallowed.js";
 import { AUTO_IMAGE_KEY_PROVIDERS, DEFAULT_IMAGE_MODELS } from "../media-understanding/defaults.js";
 import { resolveAutoImageModel } from "../media-understanding/runner.js";
 
@@ -177,8 +178,8 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
     if (supportsVision) {
       activeModel = { provider: defaultModel.provider, model: defaultModel.model };
     }
-  } catch {
-    // Ignore catalog failures; fall back to auto selection.
+  } catch (err: unknown) {
+    swallowed("Ignore catalog failures; fall back to auto selection", err);
   }
 
   const hasProviderKey = async (provider: string) => {

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { swallowed } from "../logging/swallowed.js";
 
 export type TimeFormatPreference = "auto" | "12" | "24";
 export type ResolvedTimeFormat = "12" | "24";
@@ -11,8 +12,8 @@ export function resolveUserTimezone(configured?: string): string {
     try {
       new Intl.DateTimeFormat("en-US", { timeZone: trimmed }).format(new Date());
       return trimmed;
-    } catch {
-      // ignore invalid timezone
+    } catch (err: unknown) {
+      swallowed("ignore invalid timezone", err);
     }
   }
   const host = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -107,8 +108,8 @@ function detectSystemTimeFormat(): boolean {
       if (result === "0") {
         return false;
       }
-    } catch {
-      // Not set, fall through
+    } catch (err: unknown) {
+      swallowed("Not set, fall through", err);
     }
   }
 
@@ -125,8 +126,8 @@ function detectSystemTimeFormat(): boolean {
       if (result.startsWith("h")) {
         return false;
       }
-    } catch {
-      // Fall through
+    } catch (err: unknown) {
+      swallowed("Fall through", err);
     }
   }
 

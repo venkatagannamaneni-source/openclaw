@@ -10,10 +10,12 @@ import {
   type SecretInput,
   type SecretRef,
 } from "../config/types.secrets.js";
+import { swallowed } from "../logging/swallowed.js";
 import { KILOCODE_DEFAULT_MODEL_REF } from "../providers/kilocode-shared.js";
 import { PROVIDER_ENV_VARS } from "../secrets/provider-env-vars.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import type { SecretInputMode } from "./onboard-types.js";
+
 export { CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF } from "../agents/cloudflare-ai-gateway.js";
 export {
   MISTRAL_DEFAULT_MODEL_REF,
@@ -196,8 +198,8 @@ export async function writeOAuthCredentials(
           credential,
           agentDir: targetAgentDir,
         });
-      } catch {
-        // Best-effort: sibling sync failure must not block primary onboarding.
+      } catch (err: unknown) {
+        swallowed("Best-effort: sibling sync failure must not block primary onboarding", err);
       }
     }
   }
