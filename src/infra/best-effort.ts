@@ -12,18 +12,36 @@ function getOrCreateLogger(subsystem: string): SubsystemLogger {
   return logger;
 }
 
+function resolveLogger(loggerOrSubsystem: SubsystemLogger | string | undefined): SubsystemLogger {
+  if (loggerOrSubsystem != null && typeof loggerOrSubsystem === "object") {
+    return loggerOrSubsystem;
+  }
+  return getOrCreateLogger(
+    typeof loggerOrSubsystem === "string" ? loggerOrSubsystem : "best-effort",
+  );
+}
+
+function catchAtLevel(
+  level: "trace" | "debug",
+  context: string,
+  loggerOrSubsystem?: SubsystemLogger | string,
+): (err: unknown) => void {
+  return (err: unknown) => {
+    const log = resolveLogger(loggerOrSubsystem);
+    // Guard: skip formatErrorMessage + redactSensitiveText when level is disabled.
+    if (!log.isEnabled(level)) {
+      return;
+    }
+    log[level](`${context}: ${formatErrorMessage(err)}`);
+  };
+}
+
 /** Trace-level catch handler for best-effort operations. */
 export function bestEffortCatch(
   context: string,
   loggerOrSubsystem?: SubsystemLogger | string,
 ): (err: unknown) => void {
-  return (err: unknown) => {
-    const log =
-      typeof loggerOrSubsystem === "object"
-        ? loggerOrSubsystem
-        : getOrCreateLogger(loggerOrSubsystem ?? "best-effort");
-    log.trace(`${context}: ${formatErrorMessage(err)}`);
-  };
+  return catchAtLevel("trace", context, loggerOrSubsystem);
 }
 
 /** Debug-level catch handler for less-expected failures. */
@@ -31,11 +49,5 @@ export function bestEffortCatchDebug(
   context: string,
   loggerOrSubsystem?: SubsystemLogger | string,
 ): (err: unknown) => void {
-  return (err: unknown) => {
-    const log =
-      typeof loggerOrSubsystem === "object"
-        ? loggerOrSubsystem
-        : getOrCreateLogger(loggerOrSubsystem ?? "best-effort");
-    log.debug(`${context}: ${formatErrorMessage(err)}`);
-  };
+  return catchAtLevel("debug", context, loggerOrSubsystem);
 }

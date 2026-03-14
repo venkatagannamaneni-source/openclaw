@@ -60,8 +60,8 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
   } catch (err) {
     try {
       fs.unlinkSync(scriptPath);
-    } catch (err) {
-      bestEffortCatch("unlink temp restart script")(err);
+    } catch (unlinkErr) {
+      bestEffortCatch("unlink temp restart script")(unlinkErr);
     }
     return {
       ok: false,
