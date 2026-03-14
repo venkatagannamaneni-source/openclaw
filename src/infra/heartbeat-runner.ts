@@ -45,6 +45,7 @@ import {
 } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { escapeRegExp } from "../utils.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { formatErrorMessage, hasErrnoCode } from "./errors.js";
 import { isWithinActiveHours } from "./heartbeat-active-hours.js";
 import {
@@ -395,8 +396,8 @@ async function pruneHeartbeatTranscript(params: {
     if (stat.size > preHeartbeatSize) {
       await fs.truncate(transcriptPath, preHeartbeatSize);
     }
-  } catch {
-    // File may not exist or may have been removed - ignore errors
+  } catch (err) {
+    bestEffortCatch("truncate heartbeat transcript")(err);
   }
 }
 

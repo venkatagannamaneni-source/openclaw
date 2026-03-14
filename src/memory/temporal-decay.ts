@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 
 export type TemporalDecayConfig = {
   enabled: boolean;
@@ -108,7 +109,8 @@ async function extractTimestamp(params: {
       return null;
     }
     return new Date(stat.mtimeMs);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("stat file for temporal decay")(err);
     return null;
   }
 }

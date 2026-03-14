@@ -1,4 +1,5 @@
 import type { IncomingMessage } from "node:http";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
 
 function firstHeaderValue(value: string | string[] | undefined): string {
@@ -29,7 +30,8 @@ function parseBasicPassword(authorization: string): string | undefined {
     }
     const password = decoded.slice(sep + 1).trim();
     return password || undefined;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse basic auth password")(err);
     return undefined;
   }
 }

@@ -6,6 +6,7 @@ import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope
 import type { ResolvedMemorySearchConfig } from "../agents/memory-search.js";
 import { resolveMemorySearchConfig } from "../agents/memory-search.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   createEmbeddingProvider,
@@ -294,7 +295,12 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
 
       // Search with each keyword and merge results
       const resultSets = await Promise.all(
-        searchTerms.map((term) => this.searchKeyword(term, candidates).catch(() => [])),
+        searchTerms.map((term) =>
+          this.searchKeyword(term, candidates).catch((err) => {
+            bestEffortCatch("keyword search term")(err);
+            return [];
+          }),
+        ),
       );
 
       // Merge and deduplicate results, keeping highest score for each chunk
@@ -319,13 +325,19 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     // If FTS isn't available, hybrid mode cannot use keyword search; degrade to vector-only.
     const keywordResults =
       hybrid.enabled && this.fts.enabled && this.fts.available
-        ? await this.searchKeyword(cleaned, candidates).catch(() => [])
+        ? await this.searchKeyword(cleaned, candidates).catch((err) => {
+            bestEffortCatch("keyword search")(err);
+            return [];
+          })
         : [];
 
     const queryVec = await this.embedQueryWithTimeout(cleaned);
     const hasVector = queryVec.some((v) => v !== 0);
     const vectorResults = hasVector
-      ? await this.searchVector(queryVec, candidates).catch(() => [])
+      ? await this.searchVector(queryVec, candidates).catch((err) => {
+          bestEffortCatch("vector search")(err);
+          return [];
+        })
       : [];
 
     if (!hybrid.enabled || !this.fts.enabled || !this.fts.available) {
@@ -533,8 +545,8 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       log.warn(`memory sync readonly handle detected; reopening sqlite connection`, { reason });
       try {
         this.db.close();
-      } catch {
-        /* best-effort: old connection may already be closed */
+      } catch (err) {
+        bestEffortCatch("close old db connection")(err);
       }
       this.db = this.openDatabase();
       this.vectorReady = null;
@@ -594,8 +606,8 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
               break;
             }
           }
-        } catch {
-          /* best-effort: path may not exist or be inaccessible */
+        } catch (err) {
+          bestEffortCatch("stat extra memory path for read")(err);
         }
       }
     }
@@ -799,8 +811,8 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     if (pendingSync) {
       try {
         await pendingSync;
-      } catch {
-        /* best-effort: drain pending sync before close */
+      } catch (err) {
+        bestEffortCatch("drain pending sync before close")(err);
       }
     }
     this.db.close();

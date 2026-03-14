@@ -13,6 +13,7 @@ import { resolveUsableCustomProviderApiKey } from "../agents/model-auth.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { loadConfig } from "../config/config.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
 import type { UsageProviderId } from "./provider-usage.types.js";
 
@@ -28,8 +29,8 @@ function parseGoogleToken(apiKey: string): { token: string } | null {
     if (parsed && typeof parsed.token === "string") {
       return { token: parsed.token };
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("parse Google token JSON")(err);
   }
   return null;
 }
@@ -185,8 +186,8 @@ async function resolveOAuthToken(params: {
               : undefined,
         };
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("read OAuth credential file")(err);
     }
   }
 

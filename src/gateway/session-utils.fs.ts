@@ -9,6 +9,7 @@ import {
   resolveSessionTranscriptPath,
   resolveSessionTranscriptPathInDir,
 } from "../config/sessions.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { jsonUtf8Bytes } from "../infra/json-utf8-bytes.js";
 import { hasInterSessionUserProvenance } from "../sessions/input-provenance.js";
@@ -220,8 +221,8 @@ export function archiveSessionTranscripts(opts: {
     }
     try {
       archived.push(archiveFileOnDisk(candidatePath, opts.reason));
-    } catch {
-      // Best-effort.
+    } catch (err) {
+      bestEffortCatch("archive session transcript")(err);
     }
   }
   return archived;
@@ -258,7 +259,7 @@ export async function cleanupArchivedSessionTranscripts(opts: {
       if (!stat?.isFile()) {
         continue;
       }
-      await fs.promises.rm(fullPath).catch(() => undefined);
+      await fs.promises.rm(fullPath).catch(bestEffortCatch("remove archived session file"));
       removed += 1;
     }
   }
@@ -357,8 +358,8 @@ export function readSessionTitleFieldsFromTranscript(
     if (fd !== null) {
       try {
         fs.closeSync(fd);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatch("close session transcript fd")(err);
       }
     }
   }

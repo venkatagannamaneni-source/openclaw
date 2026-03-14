@@ -1,4 +1,5 @@
 import { bindAbortRelay } from "../utils/fetch-timeout.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 type FetchWithPreconnect = typeof fetch & {
   preconnect: (url: string, init?: { credentials?: RequestCredentials }) => void;
@@ -69,9 +70,8 @@ export function wrapFetchWithAbortSignal(fetchImpl: typeof fetch): typeof fetch 
       listenerAttached = false;
       try {
         signal.removeEventListener("abort", onAbort);
-      } catch {
-        // Foreign/custom AbortSignal implementations may throw here.
-        // Never let cleanup mask the original fetch result/error.
+      } catch (err) {
+        bestEffortCatch("remove abort signal listener")(err);
       }
     };
     try {

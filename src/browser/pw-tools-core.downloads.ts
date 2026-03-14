@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Page } from "playwright-core";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { writeViaSiblingTempPath } from "./output-atomic.js";
 import { DEFAULT_UPLOAD_DIR, resolveStrictExistingPathsWithinRoot } from "./paths.js";
@@ -148,8 +149,8 @@ export async function armFileUploadViaPlaywright(opts: {
         // Playwright removed `FileChooser.cancel()`; best-effort close the chooser instead.
         try {
           await page.keyboard.press("Escape");
-        } catch {
-          // Best-effort.
+        } catch (err) {
+          bestEffortCatch("dismiss file chooser via Escape")(err);
         }
         return;
       }
@@ -161,8 +162,8 @@ export async function armFileUploadViaPlaywright(opts: {
       if (!uploadPathsResult.ok) {
         try {
           await page.keyboard.press("Escape");
-        } catch {
-          // Best-effort.
+        } catch (err) {
+          bestEffortCatch("dismiss file chooser via Escape after path error")(err);
         }
         return;
       }
@@ -178,13 +179,11 @@ export async function armFileUploadViaPlaywright(opts: {
             el.dispatchEvent(new Event("change", { bubbles: true }));
           });
         }
-      } catch {
-        // Best-effort for sites that don't react to setFiles alone.
+      } catch (err) {
+        bestEffortCatch("dispatch input/change events after setFiles")(err);
       }
     })
-    .catch(() => {
-      // Ignore timeouts; the chooser may never appear.
-    });
+    .catch(bestEffortCatch("wait for file chooser event"));
 }
 
 export async function armDialogViaPlaywright(opts: {
@@ -213,9 +212,7 @@ export async function armDialogViaPlaywright(opts: {
         await dialog.dismiss();
       }
     })
-    .catch(() => {
-      // Ignore timeouts; the dialog may never appear.
-    });
+    .catch(bestEffortCatch("wait for dialog event"));
 }
 
 export async function waitForDownloadViaPlaywright(opts: {

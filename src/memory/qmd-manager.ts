@@ -5,6 +5,7 @@ import readline from "node:readline";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { writeFileWithinRoot } from "../infra/fs-safe.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isFileMissingError, statRegularFile } from "./fs-utils.js";
@@ -91,7 +92,7 @@ async function runWithQmdEmbedLock<T>(task: () => Promise<T>): Promise<T> {
   qmdEmbedQueueTail = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await previous.catch(() => undefined);
+  await previous.catch(bestEffortCatch("drain qmd embed queue"));
   try {
     return await task();
   } finally {
@@ -345,8 +346,8 @@ export class QmdMemoryManager implements MemorySearchManager {
       for (const [name, details] of parsed) {
         existing.set(name, details);
       }
-    } catch {
-      // ignore; older qmd versions might not support list --json.
+    } catch (err) {
+      bestEffortCatch("list qmd collections")(err);
     }
     return existing;
   }
@@ -573,8 +574,8 @@ export class QmdMemoryManager implements MemorySearchManager {
         }
         return listed;
       }
-    } catch {
-      // Some qmd builds ignore `--json` and still print table output.
+    } catch (err) {
+      bestEffortCatch("parse qmd collection list JSON")(err);
     }
 
     let currentName: string | null = null;
@@ -967,8 +968,10 @@ export class QmdMemoryManager implements MemorySearchManager {
       this.updateTimer = null;
     }
     this.queuedForcedRuns = 0;
-    await this.pendingUpdate?.catch(() => undefined);
-    await this.queuedForcedUpdate?.catch(() => undefined);
+    await this.pendingUpdate?.catch(bestEffortCatch("drain pending qmd update on close"));
+    await this.queuedForcedUpdate?.catch(
+      bestEffortCatch("drain queued forced qmd update on close"),
+    );
     if (this.db) {
       this.db.close();
       this.db = null;
@@ -1115,7 +1118,7 @@ export class QmdMemoryManager implements MemorySearchManager {
   }
 
   private async drainForcedUpdates(reason: string): Promise<void> {
-    await this.pendingUpdate?.catch(() => undefined);
+    await this.pendingUpdate?.catch(bestEffortCatch("drain pending qmd update before forced"));
     while (!this.closed && this.queuedForcedRuns > 0) {
       this.queuedForcedRuns -= 1;
       await this.runUpdate(`${reason}:queued`, true, { fromForcedQueue: true });
@@ -1160,8 +1163,8 @@ export class QmdMemoryManager implements MemorySearchManager {
         await fs.lstat(targetModelsDir);
         // Already exists (directory, symlink, or file) – leave it alone
         return;
-      } catch {
-        // Does not exist – proceed to create symlink
+      } catch (err) {
+        bestEffortCatch("lstat models dir symlink target")(err);
       }
       // On Windows, creating directory symlinks requires either Administrator
       // privileges or Developer Mode.  Fall back to a directory junction which
@@ -1468,7 +1471,10 @@ export class QmdMemoryManager implements MemorySearchManager {
       });
       keep.add(target);
     }
-    const exported = await fs.readdir(exportDir).catch(() => []);
+    const exported = await fs.readdir(exportDir).catch((err) => {
+      bestEffortCatch("readdir session export dir")(err);
+      return [] as string[];
+    });
     for (const name of exported) {
       if (!name.endsWith(".md")) {
         continue;
@@ -1610,7 +1616,8 @@ export class QmdMemoryManager implements MemorySearchManager {
         collection: collection || undefined,
         collectionRelativePath: pathname || undefined,
       };
-    } catch {
+    } catch (err) {
+      bestEffortCatch("parse qmd collection URI")(err);
       return null;
     }
   }
@@ -1951,7 +1958,7 @@ export class QmdMemoryManager implements MemorySearchManager {
       return;
     }
     await Promise.race([
-      pending.catch(() => undefined),
+      pending.catch(bestEffortCatch("wait for pending qmd update before search")),
       new Promise<void>((resolve) => setTimeout(resolve, SEARCH_PENDING_UPDATE_WAIT_MS)),
     ]);
   }

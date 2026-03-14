@@ -1,4 +1,5 @@
 import type { OpenClawConfig } from "../config/config.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import type { ResolvedQmdConfig } from "./backend-config.js";
 import { resolveMemoryBackendConfig } from "./backend-config.js";
@@ -126,7 +127,7 @@ class FallbackMemoryManager implements MemorySearchManager {
         this.primaryFailed = true;
         this.lastError = err instanceof Error ? err.message : String(err);
         log.warn(`qmd memory failed; switching to builtin index: ${this.lastError}`);
-        await this.deps.primary.close?.().catch(() => {});
+        await this.deps.primary.close?.().catch(bestEffortCatch("close failed qmd primary"));
         // Evict the failed wrapper so the next request can retry QMD with a fresh manager.
         this.evictCacheEntry();
       }

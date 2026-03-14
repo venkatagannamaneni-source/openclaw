@@ -29,6 +29,7 @@ import {
 } from "../../config/sessions.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { archiveSessionTranscripts } from "../../gateway/session-utils.fs.js";
+import { bestEffortCatch } from "../../infra/best-effort.js";
 import { resolveConversationIdFromTargets } from "../../infra/outbound/conversation-id.js";
 import { deliverSessionMaintenanceWarning } from "../../infra/session-maintenance-warning.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -604,7 +605,9 @@ export async function initSessionState(params: {
           sessionKey,
           cfg,
         });
-        void hookRunner.runSessionEnd(payload.event, payload.context).catch(() => {});
+        void hookRunner
+          .runSessionEnd(payload.event, payload.context)
+          .catch(bestEffortCatch("run session_end hook"));
       }
     }
 
@@ -616,7 +619,9 @@ export async function initSessionState(params: {
         cfg,
         resumedFrom: previousSessionEntry?.sessionId,
       });
-      void hookRunner.runSessionStart(payload.event, payload.context).catch(() => {});
+      void hookRunner
+        .runSessionStart(payload.event, payload.context)
+        .catch(bestEffortCatch("run session_start hook"));
     }
   }
 

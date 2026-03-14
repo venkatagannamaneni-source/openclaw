@@ -3,6 +3,7 @@ import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 import { GatewayClient } from "../gateway/client.js";
 import { createOperatorApprovalsGatewayClient } from "../gateway/operator-approvals-client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveExecApprovalCommandDisplay } from "../infra/exec-approval-command-display.js";
 import {
   buildExecApprovalPendingReplyPayload,
@@ -331,7 +332,7 @@ export class TelegramExecApprovalHandler {
           token: this.opts.token,
           accountId: this.opts.accountId,
           ...(typeof target.threadId === "number" ? { messageThreadId: target.threadId } : {}),
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send telegram typing for exec approval"));
 
         const result = await this.sendMessage(target.to, payload.text ?? "", {
           cfg: this.opts.cfg,

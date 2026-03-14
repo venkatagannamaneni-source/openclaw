@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { bestEffortCatch } from "./best-effort.js";
 import type { FileIdentityStat } from "./file-identity.js";
 
 export type PinnedWriteInput =
@@ -158,7 +159,7 @@ export async function runPinnedWriteHelper(params: {
   try {
     if (!child.stdin) {
       const identity = await runPinnedWriteFallback(params);
-      await exitPromise.catch(() => {});
+      await exitPromise.catch(bestEffortCatch("await pinned-write child exit"));
       return identity;
     }
 
@@ -186,7 +187,7 @@ export async function runPinnedWriteHelper(params: {
     return parsePinnedIdentity(stdout);
   } catch (error) {
     child.kill("SIGKILL");
-    await exitPromise.catch(() => {});
+    await exitPromise.catch(bestEffortCatch("await pinned-write child exit after kill"));
     throw error;
   }
 }
@@ -221,7 +222,7 @@ async function runPinnedWriteFallback(params: {
     try {
       await pipeline(params.input.stream, handle.createWriteStream());
     } finally {
-      await handle.close().catch(() => {});
+      await handle.close().catch(bestEffortCatch("close file handle"));
     }
   }
   await fs.rename(tempPath, targetPath);

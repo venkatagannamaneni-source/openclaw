@@ -2,6 +2,12 @@ import type { LookupFn, SsrFPolicy } from "openclaw/plugin-sdk/tlon";
 import { UrbitAuthError } from "./errors.js";
 import { urbitFetch } from "./fetch.js";
 
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
+
 export type UrbitAuthenticateOptions = {
   ssrfPolicy?: SsrFPolicy;
   lookupFn?: LookupFn;
@@ -36,7 +42,7 @@ export async function authenticate(
     }
 
     // Some Urbit setups require the response body to be read before cookie headers finalize.
-    await response.text().catch(() => {});
+    await response.text().catch(bestEffortCatch("urbit read auth response body"));
     const cookie = response.headers.get("set-cookie");
     if (!cookie) {
       throw new UrbitAuthError("missing_cookie", "No authentication cookie received");

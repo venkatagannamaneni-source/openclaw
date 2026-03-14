@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "./best-effort.js";
 
 export async function readJsonFile<T>(filePath: string): Promise<T | null> {
   try {
@@ -42,17 +43,17 @@ export async function writeTextAtomic(
     await fs.writeFile(tmp, payload, "utf8");
     try {
       await fs.chmod(tmp, mode);
-    } catch {
-      // best-effort; ignore on platforms without chmod
+    } catch (err) {
+      bestEffortCatch("chmod temp file")(err);
     }
     await fs.rename(tmp, filePath);
     try {
       await fs.chmod(filePath, mode);
-    } catch {
-      // best-effort; ignore on platforms without chmod
+    } catch (err) {
+      bestEffortCatch("chmod written file")(err);
     }
   } finally {
-    await fs.rm(tmp, { force: true }).catch(() => undefined);
+    await fs.rm(tmp, { force: true }).catch(bestEffortCatch("rm temp file"));
   }
 }
 

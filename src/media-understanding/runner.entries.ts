@@ -13,6 +13,7 @@ import type {
   MediaUnderstandingModelConfig,
 } from "../config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveProxyFetchFromEnv } from "../infra/net/proxy-fetch.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { runExec } from "../process/exec.js";
@@ -664,6 +665,8 @@ export async function runCliEntry(params: {
       model: command,
     };
   } finally {
-    await fs.rm(outputDir, { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(outputDir, { recursive: true, force: true })
+      .catch(bestEffortCatch("cleanup CLI media-understanding output dir"));
   }
 }

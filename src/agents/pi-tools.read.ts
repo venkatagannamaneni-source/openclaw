@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { createEditTool, createReadTool, createWriteTool } from "@mariozechner/pi-coding-agent";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import {
   appendFileWithinRoot,
   SafeOpenError,
@@ -806,7 +807,7 @@ function createHostEditOperations(root: string, options?: { workspaceOnly?: bool
           rootDir: root,
           relativePath: relative,
         });
-        await opened.handle.close().catch(() => {});
+        await opened.handle.close().catch(bestEffortCatch("close file handle after access check"));
       } catch (error) {
         if (error instanceof SafeOpenError && error.code === "not-found") {
           throw createFsAccessError("ENOENT", absolutePath);

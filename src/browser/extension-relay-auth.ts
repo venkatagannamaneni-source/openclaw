@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { loadConfig } from "../config/config.js";
 import { normalizeSecretInputString, resolveSecretInputRef } from "../config/types.secrets.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { secretRefKey } from "../secrets/ref-contract.js";
 import { resolveSecretRefValues } from "../secrets/resolve.js";
 
@@ -43,8 +44,8 @@ async function resolveGatewayAuthToken(): Promise<string | null> {
         if (resolvedToken) {
           return resolvedToken;
         }
-      } catch {
-        // handled below
+      } catch (err) {
+        bestEffortCatch("resolve gateway auth secret ref")(err);
       }
       throw new SecretRefUnavailableError(
         `extension relay requires a resolved gateway token, but gateway.auth.token SecretRef is unavailable (${refLabel}). Set OPENCLAW_GATEWAY_TOKEN or resolve your secret provider.`,
@@ -58,7 +59,7 @@ async function resolveGatewayAuthToken(): Promise<string | null> {
     if (err instanceof SecretRefUnavailableError) {
       throw err;
     }
-    // ignore config read failures; caller can fallback to per-process random token
+    bestEffortCatch("read config for gateway auth token")(err);
   }
   return null;
 }
@@ -105,7 +106,8 @@ export async function probeAuthenticatedOpenClawRelay(params: {
     const body = (await res.json()) as { Browser?: unknown };
     const browserName = typeof body?.Browser === "string" ? body.Browser.trim() : "";
     return browserName === OPENCLAW_RELAY_BROWSER;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("probe authenticated OpenClaw relay")(err);
     return false;
   } finally {
     clearTimeout(timer);

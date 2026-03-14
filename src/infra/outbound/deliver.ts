@@ -35,6 +35,7 @@ import { sendMessageSignal } from "../../signal/send.js";
 import type { sendMessageSlack } from "../../slack/send.js";
 import type { sendMessageTelegram } from "../../telegram/send.js";
 import type { sendMessageWhatsApp } from "../../web/outbound.js";
+import { bestEffortCatchDebug } from "../best-effort.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
 import type { OutboundIdentity } from "./identity.js";
@@ -507,19 +508,21 @@ export async function deliverOutboundPayloads(
     const results = await deliverOutboundPayloadsCore(wrappedParams);
     if (queueId) {
       if (hadPartialFailure) {
-        await failDelivery(queueId, "partial delivery failure (bestEffort)").catch(() => {});
+        await failDelivery(queueId, "partial delivery failure (bestEffort)").catch(
+          bestEffortCatchDebug("fail delivery queue entry"),
+        );
       } else {
-        await ackDelivery(queueId).catch(() => {}); // Best-effort cleanup.
+        await ackDelivery(queueId).catch(bestEffortCatchDebug("ack delivery queue entry"));
       }
     }
     return results;
   } catch (err) {
     if (queueId) {
       if (isAbortError(err)) {
-        await ackDelivery(queueId).catch(() => {});
+        await ackDelivery(queueId).catch(bestEffortCatchDebug("ack delivery on abort"));
       } else {
         await failDelivery(queueId, err instanceof Error ? err.message : String(err)).catch(
-          () => {},
+          bestEffortCatchDebug("fail delivery on error"),
         );
       }
     }

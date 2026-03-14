@@ -16,6 +16,12 @@ import {
 } from "openclaw/plugin-sdk/nostr";
 import { z } from "zod";
 import { publishNostrProfile, getNostrProfileState } from "./channel.js";
+
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
 import { NostrProfileSchema, type NostrProfile } from "./config-schema.js";
 import { importProfileFromRelays, mergeProfiles } from "./nostr-profile-import.js";
 
@@ -85,7 +91,7 @@ async function withPublishLock<T>(accountId: string, fn: () => Promise<T>): Prom
   publishLocks.set(accountId, next);
 
   // Wait for previous operation to complete
-  await prev.catch(() => {});
+  await prev.catch(bestEffortCatch("nostr publish lock wait for previous"));
 
   try {
     return await fn();

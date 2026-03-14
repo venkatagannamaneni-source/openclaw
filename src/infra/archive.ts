@@ -20,6 +20,7 @@ import {
   prepareArchiveOutputPath,
   withStagedArchiveDestination,
 } from "./archive-staging.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { sameFileIdentity } from "./file-identity.js";
 import { openFileWithinRoot, openWritableFileWithinRoot, SafeOpenError } from "./fs-safe.js";
 import { isNotFoundPathError } from "./path-guards.js";
@@ -93,8 +94,8 @@ export async function resolvePackedRootDir(extractDir: string): Promise<string> 
     if (stat.isDirectory()) {
       return direct;
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("stat extracted package dir")(err);
   }
 
   const entries = await fs.readdir(extractDir, { withFileTypes: true });

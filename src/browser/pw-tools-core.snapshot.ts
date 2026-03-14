@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
 import { type AriaSnapshotNode, formatAriaSnapshot, type RawAXNode } from "./cdp.js";
 import {
@@ -38,7 +39,7 @@ export async function snapshotAriaViaPlaywright(opts: {
     page,
     targetId: opts.targetId,
     fn: async (send) => {
-      await send("Accessibility.enable").catch(() => {});
+      await send("Accessibility.enable").catch(bestEffortCatch("enable CDP Accessibility"));
       return (await send("Accessibility.getFullAXTree")) as {
         nodes?: RawAXNode[];
       };
@@ -211,7 +212,7 @@ export async function navigateViaPlaywright(opts: {
       cdpUrl: opts.cdpUrl,
       targetId: opts.targetId,
       reason: "retry navigate after detached frame",
-    }).catch(() => {});
+    }).catch(bestEffortCatch("force disconnect Playwright for navigate retry"));
     page = await getPageForTargetId(opts);
     ensurePageState(page);
     response = await navigate();

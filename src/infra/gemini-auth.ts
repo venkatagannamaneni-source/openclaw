@@ -4,6 +4,8 @@
  * Supports both traditional API keys and OAuth JSON format.
  */
 
+import { bestEffortCatch } from "./best-effort.js";
+
 /**
  * Parse Gemini API key and return appropriate auth headers.
  *
@@ -25,8 +27,8 @@ export function parseGeminiAuth(apiKey: string): { headers: Record<string, strin
           },
         };
       }
-    } catch {
-      // Parse failed, fallback to API key mode
+    } catch (err) {
+      bestEffortCatch("parse Gemini OAuth JSON")(err);
     }
   }
 

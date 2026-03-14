@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { bestEffortCatch } from "./best-effort.js";
 
 /**
  * Homebrew Cellar paths (e.g. /opt/homebrew/Cellar/node/25.7.0/bin/node)
@@ -20,8 +21,8 @@ export async function resolveStableNodePath(nodePath: string): Promise<string> {
   try {
     await fs.access(optPath);
     return optPath;
-  } catch {
-    // fall through
+  } catch (err) {
+    bestEffortCatch("access stable node path candidate")(err);
   }
 
   // For the default "node" formula, also try the direct bin symlink.
@@ -30,8 +31,8 @@ export async function resolveStableNodePath(nodePath: string): Promise<string> {
     try {
       await fs.access(binPath);
       return binPath;
-    } catch {
-      // fall through
+    } catch (err) {
+      bestEffortCatch("access stable node path candidate")(err);
     }
   }
 

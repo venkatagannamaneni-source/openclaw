@@ -2,6 +2,7 @@ import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { ensurePortAvailable } from "../infra/ports.js";
 import { rawDataToString } from "../infra/ws.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -52,7 +53,8 @@ export {
 function exists(filePath: string) {
   try {
     return fs.existsSync(filePath);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("check file exists")(err);
     return false;
   }
 }
@@ -84,8 +86,8 @@ async function canOpenWebSocket(url: string, timeoutMs: number): Promise<boolean
     ws.once("open", () => {
       try {
         ws.close();
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("close WebSocket after open probe")(err);
       }
       resolve(true);
     });
@@ -125,7 +127,8 @@ async function fetchChromeVersion(
       return null;
     }
     return data;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("fetch Chrome /json/version")(err);
     return null;
   } finally {
     clearTimeout(t);
@@ -164,7 +167,8 @@ async function canRunCdpHealthCommand(
       let parsed: { id?: unknown; result?: unknown } | null = null;
       try {
         parsed = JSON.parse(rawDataToString(raw)) as { id?: unknown; result?: unknown };
-      } catch {
+      } catch (err) {
+        bestEffortCatch("parse CDP health check response")(err);
         return;
       }
       if (parsed?.id !== 1) {
@@ -182,8 +186,8 @@ async function canRunCdpHealthCommand(
       ws.off("message", onMessage);
       try {
         ws.close();
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("close CDP health check WebSocket")(err);
       }
       resolve(value);
     };
@@ -191,8 +195,8 @@ async function canRunCdpHealthCommand(
       () => {
         try {
           ws.terminate();
-        } catch {
-          // ignore
+        } catch (err) {
+          bestEffortCatch("terminate CDP health check WebSocket")(err);
         }
         finish(false);
       },
@@ -207,7 +211,8 @@ async function canRunCdpHealthCommand(
             method: "Browser.getVersion",
           }),
         );
-      } catch {
+      } catch (err) {
+        bestEffortCatch("send CDP Browser.getVersion health check")(err);
         finish(false);
       }
     });
@@ -326,8 +331,8 @@ export async function launchOpenClawChrome(
     }
     try {
       bootstrap.kill("SIGTERM");
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("kill Chrome bootstrap process")(err);
     }
     const exitDeadline = Date.now() + CHROME_BOOTSTRAP_EXIT_TIMEOUT_MS;
     while (Date.now() < exitDeadline) {
@@ -387,8 +392,8 @@ export async function launchOpenClawChrome(
         : "";
     try {
       proc.kill("SIGKILL");
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("force kill Chrome after failed start")(err);
     }
     throw new Error(
       `Failed to start Chrome CDP on port ${profile.cdpPort} for profile "${profile.name}".${sandboxHint}${stderrHint}`,
@@ -424,8 +429,8 @@ export async function stopOpenClawChrome(
   }
   try {
     proc.kill("SIGTERM");
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("send SIGTERM to Chrome")(err);
   }
 
   const start = Date.now();
@@ -441,7 +446,7 @@ export async function stopOpenClawChrome(
 
   try {
     proc.kill("SIGKILL");
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("force kill Chrome on stop")(err);
   }
 }

@@ -2,6 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { bestEffortCatch } from "./best-effort.js";
 
 const CORE_PACKAGE_NAMES = new Set(["openclaw"]);
 
@@ -68,8 +69,8 @@ function candidateDirsFromArgv1(argv1: string): string[] {
     if (resolved !== normalized) {
       candidates.push(path.dirname(resolved));
     }
-  } catch {
-    // realpathSync throws if path doesn't exist; keep original candidates
+  } catch (err) {
+    bestEffortCatch("realpath for package root candidate")(err);
   }
 
   const parts = normalized.split(path.sep);
@@ -118,8 +119,8 @@ function buildCandidates(opts: { cwd?: string; argv1?: string; moduleUrl?: strin
   if (opts.moduleUrl) {
     try {
       candidates.push(path.dirname(fileURLToPath(opts.moduleUrl)));
-    } catch {
-      // Ignore invalid file:// URLs and keep other package-root hints.
+    } catch (err) {
+      bestEffortCatch("parse moduleUrl for package root")(err);
     }
   }
   if (opts.argv1) {

@@ -8,6 +8,7 @@ import {
   storeDeviceAuthTokenInStore,
 } from "../shared/device-auth-store.js";
 import type { DeviceAuthStore } from "../shared/device-auth.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 const DEVICE_AUTH_FILE = "device-auth.json";
 
@@ -39,8 +40,8 @@ function writeStore(filePath: string, store: DeviceAuthStore): void {
   fs.writeFileSync(filePath, `${JSON.stringify(store, null, 2)}\n`, { mode: 0o600 });
   try {
     fs.chmodSync(filePath, 0o600);
-  } catch {
-    // best-effort
+  } catch (err) {
+    bestEffortCatch("chmod device auth store")(err);
   }
 }
 

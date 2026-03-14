@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_AGENT_ID } from "../routing/session-key.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { expandHomePrefix } from "./home-dir.js";
 import { requestJsonlSocket } from "./jsonl-socket.js";
 export * from "./exec-approvals-analysis.js";
@@ -367,8 +368,8 @@ export function saveExecApprovals(file: ExecApprovalsFile) {
   fs.writeFileSync(filePath, `${JSON.stringify(file, null, 2)}\n`, { mode: 0o600 });
   try {
     fs.chmodSync(filePath, 0o600);
-  } catch {
-    // best-effort on platforms without chmod
+  } catch (err) {
+    bestEffortCatch("chmod exec approvals file")(err);
   }
 }
 

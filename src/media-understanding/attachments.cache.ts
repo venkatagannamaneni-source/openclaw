@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { isAbortError } from "../infra/unhandled-rejections.js";
 import { fetchRemoteMedia, MediaFetchError } from "../media/fetch.js";
 import {
@@ -213,7 +214,7 @@ export class MediaAttachmentCache {
     await fs.writeFile(tmpPath, bufferResult.buffer);
     entry.tempPath = tmpPath;
     entry.tempCleanup = async () => {
-      await fs.unlink(tmpPath).catch(() => {});
+      await fs.unlink(tmpPath).catch(bestEffortCatch("remove temp attachment file"));
     };
     return { path: tmpPath, cleanup: entry.tempCleanup };
   }

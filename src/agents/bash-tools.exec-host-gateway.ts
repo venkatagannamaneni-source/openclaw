@@ -1,5 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { loadConfig } from "../config/config.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { buildExecApprovalUnavailableReplyPayload } from "../infra/exec-approval-reply.js";
 import {
   hasConfiguredExecApprovalDmRoute,
@@ -261,7 +262,7 @@ export async function processGatewayAllowlist(
           turnSourceAccountId: params.turnSourceAccountId,
           turnSourceThreadId: params.turnSourceThreadId,
           resultText: `Exec denied (gateway id=${approvalId}, ${deniedReason}): ${params.command}`,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send exec-denied approval followup"));
         return;
       }
 
@@ -295,7 +296,7 @@ export async function processGatewayAllowlist(
           turnSourceAccountId: params.turnSourceAccountId,
           turnSourceThreadId: params.turnSourceThreadId,
           resultText: `Exec denied (gateway id=${approvalId}, spawn-failed): ${params.command}`,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send exec-spawn-failed approval followup"));
         return;
       }
 
@@ -317,7 +318,7 @@ export async function processGatewayAllowlist(
         turnSourceAccountId: params.turnSourceAccountId,
         turnSourceThreadId: params.turnSourceThreadId,
         resultText: summary,
-      }).catch(() => {});
+      }).catch(bestEffortCatch("send exec-finished approval followup"));
     })();
 
     return {

@@ -1,4 +1,5 @@
 import { runCommandWithTimeout } from "../process/exec.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export async function copyToClipboard(value: string): Promise<boolean> {
   const attempts: Array<{ argv: string[] }> = [
@@ -17,8 +18,8 @@ export async function copyToClipboard(value: string): Promise<boolean> {
       if (result.code === 0 && !result.killed) {
         return true;
       }
-    } catch {
-      // keep trying the next fallback
+    } catch (err) {
+      bestEffortCatch("clipboard copy attempt")(err);
     }
   }
   return false;

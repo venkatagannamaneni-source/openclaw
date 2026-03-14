@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import type { BrowserFormField } from "./client-actions-core.js";
 import { DEFAULT_FILL_FIELD_TYPE } from "./form-fields.js";
 import { DEFAULT_UPLOAD_DIR, resolveStrictExistingPathsWithinRoot } from "./paths.js";
@@ -37,7 +38,7 @@ async function awaitEvalWithAbort<T>(
     return await Promise.race([evalPromise, abortPromise]);
   } catch (err) {
     // If abort wins the race, evaluate may reject later; avoid unhandled rejections.
-    void evalPromise.catch(() => {});
+    void evalPromise.catch(bestEffortCatch("suppress unhandled eval rejection on abort"));
     throw err;
   }
 }
@@ -269,7 +270,7 @@ export async function evaluateViaPlaywright(opts: {
       abortReject = reject;
     });
     // Ensure the abort promise never becomes an unhandled rejection if we throw early.
-    void abortPromise.catch(() => {});
+    void abortPromise.catch(bestEffortCatch("suppress unhandled abort promise rejection"));
   }
   if (signal) {
     const disconnect = () => {
@@ -277,7 +278,7 @@ export async function evaluateViaPlaywright(opts: {
         cdpUrl: opts.cdpUrl,
         targetId: opts.targetId,
         reason: "evaluate aborted",
-      }).catch(() => {});
+      }).catch(bestEffortCatch("force disconnect Playwright on abort"));
     };
     if (signal.aborted) {
       disconnect();
@@ -594,7 +595,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
         const existing = document.querySelectorAll("[data-openclaw-labels]");
         existing.forEach((el) => el.remove());
       })
-      .catch(() => {});
+      .catch(bestEffortCatch("remove screenshot labels overlay"));
   }
 }
 
@@ -644,7 +645,7 @@ export async function setInputFilesViaPlaywright(opts: {
         el.dispatchEvent(new Event("change", { bubbles: true }));
       });
     }
-  } catch {
-    // Best-effort for sites that don't react to setInputFiles alone.
+  } catch (err) {
+    bestEffortCatch("dispatch input/change events after setInputFiles")(err);
   }
 }

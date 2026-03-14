@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import JSON5 from "json5";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type SessionEntryLike = {
   sessionId?: string;
@@ -54,8 +55,8 @@ export function readSessionStoreJson5(storePath: string): {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return { store: parsed as Record<string, SessionEntryLike>, ok: true };
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("read session store JSON5")(err);
   }
   return { store: {}, ok: false };
 }

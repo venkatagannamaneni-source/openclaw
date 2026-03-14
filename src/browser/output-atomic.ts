@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { writeFileFromPathWithinRoot } from "../infra/fs-safe.js";
 import { sanitizeUntrustedFileName } from "./safe-filename.js";
 
@@ -45,7 +46,7 @@ export async function writeViaSiblingTempPath(params: {
     renameSucceeded = true;
   } finally {
     if (!renameSucceeded) {
-      await fs.rm(tempPath, { force: true }).catch(() => {});
+      await fs.rm(tempPath, { force: true }).catch(bestEffortCatch("remove temp output file"));
     }
   }
 }

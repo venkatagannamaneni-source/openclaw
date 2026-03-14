@@ -1,4 +1,5 @@
 import net from "node:net";
+import { bestEffortCatch } from "./best-effort.js";
 
 export async function requestJsonlSocket<T>(params: {
   socketPath: string;
@@ -19,8 +20,8 @@ export async function requestJsonlSocket<T>(params: {
       settled = true;
       try {
         client.destroy();
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("destroy jsonl socket")(err);
       }
       resolve(value);
     };
@@ -50,8 +51,8 @@ export async function requestJsonlSocket<T>(params: {
           clearTimeout(timer);
           finish(result);
           return;
-        } catch {
-          // ignore
+        } catch (err) {
+          bestEffortCatch("parse jsonl socket message")(err);
         }
       }
     });

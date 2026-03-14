@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { redactSensitiveText } from "../logging/redact.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { hashText } from "./internal.js";
@@ -27,7 +28,8 @@ export async function listSessionFilesForAgent(agentId: string): Promise<string[
       .map((entry) => entry.name)
       .filter((name) => name.endsWith(".jsonl"))
       .map((name) => path.join(dir, name));
-  } catch {
+  } catch (err) {
+    bestEffortCatch("list session transcript files")(err);
     return [];
   }
 }
@@ -86,7 +88,8 @@ export async function buildSessionEntry(absPath: string): Promise<SessionFileEnt
       let record: unknown;
       try {
         record = JSON.parse(line);
-      } catch {
+      } catch (err) {
+        bestEffortCatch("parse session JSONL line")(err);
         continue;
       }
       if (

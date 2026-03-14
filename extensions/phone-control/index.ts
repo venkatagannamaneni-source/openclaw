@@ -2,6 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { OpenClawPluginApi, OpenClawPluginService } from "openclaw/plugin-sdk/phone-control";
 
+function bestEffortCatch(context: string): (err: unknown) => void {
+  return (err: unknown) => {
+    console.debug(`${context}:`, err);
+  };
+}
+
 type ArmGroup = "camera" | "screen" | "writes" | "all";
 
 type ArmStateFileV1 = {
@@ -307,10 +313,10 @@ export default function register(api: OpenClawPluginApi) {
       };
 
       // Best effort; don't crash the gateway if state is corrupt.
-      await tick().catch(() => {});
+      await tick().catch(bestEffortCatch("phone-control expiry tick"));
 
       expiryInterval = setInterval(() => {
-        tick().catch(() => {});
+        tick().catch(bestEffortCatch("phone-control expiry interval tick"));
       }, 15_000);
       expiryInterval.unref?.();
 

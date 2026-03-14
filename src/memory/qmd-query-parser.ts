@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("memory");
@@ -74,7 +75,8 @@ function parseQmdQueryResultArray(raw: string): QmdQueryResult[] | null {
       return null;
     }
     return parsed as QmdQueryResult[];
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse qmd query result array")(err);
     return null;
   }
 }

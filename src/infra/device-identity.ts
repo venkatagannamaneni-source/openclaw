@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { resolveStateDir } from "../config/paths.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type DeviceIdentity = {
   deviceId: string;
@@ -84,8 +85,8 @@ export function loadOrCreateDeviceIdentity(
           fs.writeFileSync(filePath, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 });
           try {
             fs.chmodSync(filePath, 0o600);
-          } catch {
-            // best-effort
+          } catch (err) {
+            bestEffortCatch("chmod device identity file")(err);
           }
           return {
             deviceId: derivedId,
@@ -100,8 +101,8 @@ export function loadOrCreateDeviceIdentity(
         };
       }
     }
-  } catch {
-    // fall through to regenerate
+  } catch (err) {
+    bestEffortCatch("read existing device identity")(err);
   }
 
   const identity = generateIdentity();
@@ -116,8 +117,8 @@ export function loadOrCreateDeviceIdentity(
   fs.writeFileSync(filePath, `${JSON.stringify(stored, null, 2)}\n`, { mode: 0o600 });
   try {
     fs.chmodSync(filePath, 0o600);
-  } catch {
-    // best-effort
+  } catch (err) {
+    bestEffortCatch("chmod device identity file")(err);
   }
   return identity;
 }

@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { stopOpenClawChrome } from "./chrome.js";
 import type { ResolvedBrowserConfig } from "./config.js";
 import { resolveProfile } from "./config.js";
@@ -52,13 +53,13 @@ export async function stopKnownBrowserProfiles(params: {
         }
         if (runtime?.profile.driver === "extension") {
           await stopChromeExtensionRelayServer({ cdpUrl: runtime.profile.cdpUrl }).catch(
-            () => false,
+            bestEffortCatch("stop extension relay on shutdown"),
           );
           continue;
         }
         await ctx.forProfile(name).stopRunningBrowser();
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("stop browser profile on shutdown")(err);
       }
     }
   } catch (err) {

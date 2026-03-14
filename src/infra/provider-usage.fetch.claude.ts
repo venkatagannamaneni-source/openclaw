@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "./best-effort.js";
 import { buildUsageHttpErrorSnapshot, fetchJson } from "./provider-usage.fetch.shared.js";
 import { clampPercent, PROVIDER_LABELS } from "./provider-usage.shared.js";
 import type { ProviderUsageSnapshot, UsageWindow } from "./provider-usage.types.js";
@@ -142,8 +143,8 @@ export async function fetchClaudeUsage(
       if (typeof raw === "string" && raw.trim()) {
         message = raw.trim();
       }
-    } catch {
-      // ignore parse errors
+    } catch (err) {
+      bestEffortCatch("parse Claude usage error response")(err);
     }
 
     // Claude Code CLI setup-token yields tokens that can be used for inference, but may not

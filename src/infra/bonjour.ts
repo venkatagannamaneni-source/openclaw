@@ -1,5 +1,6 @@
 import { logDebug, logWarn } from "../logger.js";
 import { getLogger } from "../logging.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { ignoreCiaoCancellationRejection } from "./bonjour-ciao.js";
 import { formatBonjourError } from "./bonjour-errors.js";
 import { isTruthyEnvValue } from "./env.js";
@@ -64,18 +65,18 @@ function serviceSummary(label: string, svc: BonjourService): string {
   let port = -1;
   try {
     fqdn = svc.getFQDN();
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("get bonjour FQDN")(err);
   }
   try {
     hostname = svc.getHostname();
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("get bonjour hostname")(err);
   }
   try {
     port = svc.getPort();
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("get bonjour port")(err);
   }
   const state = typeof svc.serviceState === "string" ? svc.serviceState : "unknown";
   return `${label} fqdn=${fqdn} host=${hostname} port=${port} state=${state}`;
@@ -228,8 +229,8 @@ export async function startGatewayBonjourAdvertiser(
       let key = label;
       try {
         key = `${label}:${svc.getFQDN()}`;
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("get bonjour FQDN for watchdog")(err);
       }
       const now = Date.now();
       const last = lastRepairAttempt.get(key) ?? 0;
@@ -265,14 +266,14 @@ export async function startGatewayBonjourAdvertiser(
       for (const { svc } of services) {
         try {
           await svc.destroy();
-        } catch {
-          /* ignore */
+        } catch (err) {
+          bestEffortCatch("destroy bonjour service")(err);
         }
       }
       try {
         await responder.shutdown();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatch("shutdown bonjour responder")(err);
       } finally {
         ciaoCancellationRejectionHandler?.();
       }

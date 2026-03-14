@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
+import { bestEffortCatch } from "./best-effort.js";
 
 const LSOF_CANDIDATES =
   process.platform === "darwin"
@@ -29,8 +30,8 @@ export function resolveLsofCommandSync(): string {
     try {
       fs.accessSync(candidate, fs.constants.X_OK);
       return candidate;
-    } catch {
-      // keep trying
+    } catch (err) {
+      bestEffortCatch("access check lsof candidate")(err);
     }
   }
   return "lsof";

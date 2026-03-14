@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveBrewPathDirs } from "./brew.js";
 import { isTruthyEnvValue } from "./env.js";
 
@@ -65,8 +66,8 @@ function candidateBinDirs(opts: EnsureOpenClawPathOpts): { prepend: string[]; ap
     if (isExecutable(siblingCli)) {
       prepend.push(execDir);
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("resolve sibling CLI in exec dir")(err);
   }
 
   // Project-local installs are a common repo-based attack vector (bin hijacking). Keep this

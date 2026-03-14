@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import JSON5 from "json5";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { expandHomePrefix } from "../infra/home-dir.js";
 import { CONFIG_DIR } from "../utils.js";
 import type { CronStoreFile } from "./types.js";
@@ -122,7 +123,9 @@ async function renameWithRetry(src: string, dest: string): Promise<void> {
       // Windows doesn't reliably support atomic replace via rename when dest exists.
       if (code === "EPERM" || code === "EEXIST") {
         await fs.promises.copyFile(src, dest);
-        await fs.promises.unlink(src).catch(() => {});
+        await fs.promises
+          .unlink(src)
+          .catch(bestEffortCatch("unlink cron store temp file after copy"));
         return;
       }
       throw err;

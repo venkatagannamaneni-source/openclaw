@@ -5,6 +5,7 @@ import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { danger, logVerbose } from "../globals.js";
 import { waitForAbortSignal } from "../infra/abort-signal.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { normalizePluginHttpPath } from "../plugins/http-path.js";
 import { registerPluginHttpRoute } from "../plugins/http-registry.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -102,7 +103,7 @@ function startLineLoadingKeepalive(params: {
     void showLoadingAnimation(params.userId, {
       accountId: params.accountId,
       loadingSeconds,
-    }).catch(() => {});
+    }).catch(bestEffortCatch("show LINE loading animation"));
   };
 
   trigger();
@@ -209,7 +210,9 @@ export async function monitorLineProvider(
 
               // Show loading animation before each delivery (non-blocking)
               if (ctx.userId && !ctx.isGroup) {
-                void showLoadingAnimation(ctx.userId, { accountId: ctx.accountId }).catch(() => {});
+                void showLoadingAnimation(ctx.userId, { accountId: ctx.accountId }).catch(
+                  bestEffortCatch("show LINE loading animation before delivery"),
+                );
               }
 
               const { replyTokenUsed: nextReplyTokenUsed } = await deliverLineAutoReply({

@@ -7,6 +7,7 @@ import type { Duplex } from "node:stream";
 import chokidar from "chokidar";
 import { type WebSocket, WebSocketServer } from "ws";
 import { resolveStateDir } from "../config/paths.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { detectMime } from "../media/mime.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -281,7 +282,7 @@ export async function createCanvasHostHandler(
     opts.runtime.error(
       `canvasHost watcher error: ${String(err)} (live reload disabled; consider canvasHost.liveReload=false or a smaller canvasHost.root)`,
     );
-    void watcher.close().catch(() => {});
+    void watcher.close().catch(bestEffortCatch("close canvas watcher on error"));
   });
 
   const handleUpgrade = (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -349,7 +350,7 @@ export async function createCanvasHostHandler(
       try {
         data = await handle.readFile();
       } finally {
-        await handle.close().catch(() => {});
+        await handle.close().catch(bestEffortCatch("close canvas file handle"));
       }
 
       const lower = realPath.toLowerCase();
@@ -388,7 +389,7 @@ export async function createCanvasHostHandler(
         clearTimeout(debounce);
       }
       watcherClosed = true;
-      await watcher?.close().catch(() => {});
+      await watcher?.close().catch(bestEffortCatch("close canvas watcher"));
       if (wss) {
         await new Promise<void>((resolve) => wss.close(() => resolve()));
       }

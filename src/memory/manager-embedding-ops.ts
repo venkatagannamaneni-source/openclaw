@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runGeminiEmbeddingBatches, type GeminiBatchRequest } from "./batch-gemini.js";
 import {
@@ -766,8 +767,8 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
             `DELETE FROM ${VECTOR_TABLE} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
           )
           .run(pathname, source);
-      } catch {
-        /* best-effort: vector table may not exist yet */
+      } catch (err) {
+        bestEffortCatch("delete vector rows for file")(err);
       }
     }
     if (this.fts.enabled && this.fts.available && this.provider) {
@@ -775,8 +776,8 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
         this.db
           .prepare(`DELETE FROM ${FTS_TABLE} WHERE path = ? AND source = ? AND model = ?`)
           .run(pathname, source, this.provider.model);
-      } catch {
-        /* best-effort: FTS table may not exist yet */
+      } catch (err) {
+        bestEffortCatch("delete FTS rows for file")(err);
       }
     }
     this.db.prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`).run(pathname, source);
@@ -903,8 +904,8 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
       if (vectorReady && embedding.length > 0) {
         try {
           this.db.prepare(`DELETE FROM ${VECTOR_TABLE} WHERE id = ?`).run(id);
-        } catch {
-          /* best-effort: stale vector row may not exist */
+        } catch (err) {
+          bestEffortCatch("delete stale vector row")(err);
         }
         this.db
           .prepare(`INSERT INTO ${VECTOR_TABLE} (id, embedding) VALUES (?, ?)`)

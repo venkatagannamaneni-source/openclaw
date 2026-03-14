@@ -8,6 +8,7 @@ import { resolveAgentDir } from "../agents/agent-scope.js";
 import { ResolvedMemorySearchConfig } from "../agents/memory-search.js";
 import { type OpenClawConfig } from "../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { onSessionTranscriptUpdate } from "../sessions/transcript-events.js";
 import { resolveUserPath } from "../utils.js";
@@ -318,8 +319,8 @@ export abstract class MemoryManagerSyncOps {
     } catch (err) {
       try {
         this.db.exec("ROLLBACK");
-      } catch {
-        // best-effort rollback: transaction may already be closed
+      } catch (rollbackErr) {
+        bestEffortCatch("rollback transaction")(rollbackErr);
       }
       throw err;
     }
@@ -410,8 +411,8 @@ export abstract class MemoryManagerSyncOps {
         ) {
           watchPaths.add(entry);
         }
-      } catch {
-        // Skip missing/unreadable additional paths.
+      } catch (err) {
+        bestEffortCatch("stat watch path")(err);
       }
     }
     this.watcher = chokidar.watch(Array.from(watchPaths), {
@@ -511,7 +512,8 @@ export abstract class MemoryManagerSyncOps {
     let stat: { size: number };
     try {
       stat = await fs.stat(sessionFile);
-    } catch {
+    } catch (err) {
+      bestEffortCatch("stat session file")(err);
       return null;
     }
     const size = stat.size;
@@ -740,8 +742,8 @@ export abstract class MemoryManagerSyncOps {
             `DELETE FROM ${VECTOR_TABLE} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
           )
           .run(stale.path, "memory");
-      } catch {
-        // best-effort: vector table may not exist
+      } catch (err) {
+        bestEffortCatch("delete stale memory vector rows")(err);
       }
       this.db.prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`).run(stale.path, "memory");
       if (this.fts.enabled && this.fts.available) {
@@ -749,8 +751,8 @@ export abstract class MemoryManagerSyncOps {
           this.db
             .prepare(`DELETE FROM ${FTS_TABLE} WHERE path = ? AND source = ? AND model = ?`)
             .run(stale.path, "memory", this.provider.model);
-        } catch {
-          // best-effort: FTS table may not exist
+        } catch (err) {
+          bestEffortCatch("delete stale memory FTS rows")(err);
         }
       }
     }
@@ -849,8 +851,8 @@ export abstract class MemoryManagerSyncOps {
             `DELETE FROM ${VECTOR_TABLE} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
           )
           .run(stale.path, "sessions");
-      } catch {
-        // best-effort: vector table may not exist
+      } catch (err) {
+        bestEffortCatch("delete stale session vector rows")(err);
       }
       this.db
         .prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`)
@@ -860,8 +862,8 @@ export abstract class MemoryManagerSyncOps {
           this.db
             .prepare(`DELETE FROM ${FTS_TABLE} WHERE path = ? AND source = ? AND model = ?`)
             .run(stale.path, "sessions", this.provider.model);
-        } catch {
-          // best-effort: FTS table may not exist
+        } catch (err) {
+          bestEffortCatch("delete stale session FTS rows")(err);
         }
       }
     }
@@ -1160,8 +1162,8 @@ export abstract class MemoryManagerSyncOps {
     } catch (err) {
       try {
         this.db.close();
-      } catch {
-        // best-effort: db may already be closed
+      } catch (err) {
+        bestEffortCatch("close db before reindex")(err);
       }
       await this.removeIndexFiles(tempDbPath);
       restoreOriginalState();
@@ -1222,8 +1224,8 @@ export abstract class MemoryManagerSyncOps {
     if (this.fts.enabled && this.fts.available) {
       try {
         this.db.exec(`DELETE FROM ${FTS_TABLE}`);
-      } catch {
-        // best-effort: FTS table may not exist
+      } catch (err) {
+        bestEffortCatch("delete FTS table")(err);
       }
     }
     this.dropVectorTable();
@@ -1243,7 +1245,8 @@ export abstract class MemoryManagerSyncOps {
       const parsed = JSON.parse(row.value) as MemoryIndexMeta;
       this.lastMetaSerialized = row.value;
       return parsed;
-    } catch {
+    } catch (err) {
+      bestEffortCatch("parse memory index meta")(err);
       this.lastMetaSerialized = null;
       return null;
     }

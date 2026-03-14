@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathExists } from "../utils.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type GlobalInstallManager = "npm" | "pnpm" | "bun";
 
@@ -182,8 +183,8 @@ export async function cleanupGlobalRenameDirs(params: {
       }
       await fs.rm(target, { recursive: true, force: true });
       removed.push(entry);
-    } catch {
-      // ignore cleanup failures
+    } catch (err) {
+      bestEffortCatch("rm stale global install dir")(err);
     }
   }
   return { removed };

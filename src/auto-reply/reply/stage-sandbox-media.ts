@@ -6,6 +6,7 @@ import { assertSandboxPath } from "../../agents/sandbox-paths.js";
 import { ensureSandboxWorkspaceForSession } from "../../agents/sandbox.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
+import { bestEffortCatch } from "../../infra/best-effort.js";
 import { copyFileWithinRoot, SafeOpenError } from "../../infra/fs-safe.js";
 import { normalizeScpRemoteHost } from "../../infra/scp-host.js";
 import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
@@ -153,7 +154,9 @@ async function stageRemoteFileIntoRoot(params: {
       maxBytes: params.maxBytes,
     });
   } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(tmpDir, { recursive: true, force: true })
+      .catch(bestEffortCatch("remove sandbox media tmp dir"));
   }
 }
 

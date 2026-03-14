@@ -3,6 +3,7 @@ import path from "node:path";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { resolveStateDir } from "../../config/paths.js";
+import { bestEffortCatch } from "../best-effort.js";
 import { generateSecureUuid } from "../secure-random.js";
 import type { OutboundChannel } from "./targets.js";
 
@@ -90,8 +91,8 @@ function getErrnoCode(err: unknown): string | null {
 async function unlinkBestEffort(filePath: string): Promise<void> {
   try {
     await fs.promises.unlink(filePath);
-  } catch {
-    // Best-effort cleanup.
+  } catch (err) {
+    bestEffortCatch("unlink delivery queue file")(err);
   }
 }
 
@@ -224,8 +225,8 @@ export async function loadPendingDeliveries(stateDir?: string): Promise<QueuedDe
         await fs.promises.rename(tmp, filePath);
       }
       entries.push(entry);
-    } catch {
-      // Skip malformed or inaccessible entries.
+    } catch (err) {
+      bestEffortCatch("read delivery queue entry")(err);
     }
   }
   return entries;
@@ -406,8 +407,8 @@ export async function recoverPendingDeliveries(opts: {
       }
       try {
         await failDelivery(entry.id, errMsg, opts.stateDir);
-      } catch {
-        // Best-effort update.
+      } catch (err) {
+        bestEffortCatch("fail delivery queue entry")(err);
       }
       failed += 1;
       opts.log.warn(`Retry failed for delivery ${entry.id}: ${errMsg}`);

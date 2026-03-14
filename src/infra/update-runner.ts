@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { type CommandOptions, runCommandWithTimeout } from "../process/exec.js";
+import { bestEffortCatch } from "./best-effort.js";
 import {
   resolveControlUiDistIndexHealth,
   resolveControlUiDistIndexPathForRoot,
@@ -224,8 +225,8 @@ async function findPackageRoot(candidates: string[]) {
         if (name && CORE_PACKAGE_NAMES.has(name)) {
           return current;
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("read package.json during root search")(err);
       }
       const parent = path.dirname(current);
       if (parent === current) {
@@ -540,7 +541,9 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       );
       steps.push(worktreeStep);
       if (worktreeStep.exitCode !== 0) {
-        await fs.rm(preflightRoot, { recursive: true, force: true }).catch(() => {});
+        await fs
+          .rm(preflightRoot, { recursive: true, force: true })
+          .catch(bestEffortCatch("rm preflight worktree root"));
         return {
           status: "error",
           mode: "git",
@@ -608,7 +611,9 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           cwd: gitRoot,
           timeoutMs,
         }).catch(() => null);
-        await fs.rm(preflightRoot, { recursive: true, force: true }).catch(() => {});
+        await fs
+          .rm(preflightRoot, { recursive: true, force: true })
+          .catch(bestEffortCatch("rm preflight root after tests"));
       }
 
       if (!selectedSha) {

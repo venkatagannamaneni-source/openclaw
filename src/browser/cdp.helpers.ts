@@ -1,5 +1,6 @@
 import WebSocket from "ws";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { rawDataToString } from "../infra/ws.js";
 import { getDirectAgentForCdp, withNoProxyForCdpUrl } from "./cdp-proxy-bypass.js";
 import { CDP_HTTP_REQUEST_TIMEOUT_MS, CDP_WS_HANDSHAKE_TIMEOUT_MS } from "./cdp-timeouts.js";
@@ -17,7 +18,8 @@ export function isWebSocketUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     return parsed.protocol === "ws:" || parsed.protocol === "wss:";
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse WebSocket URL")(err);
     return false;
   }
 }
@@ -54,8 +56,8 @@ export function getHeadersWithAuth(url: string, headers: Record<string, string> 
       const auth = Buffer.from(`${parsed.username}:${parsed.password}`).toString("base64");
       return { ...mergedHeaders, Authorization: `Basic ${auth}` };
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("extract CDP auth from URL")(err);
   }
   return mergedHeaders;
 }
@@ -79,7 +81,8 @@ export function normalizeCdpHttpBaseForJsonEndpoints(cdpUrl: string): string {
     url.pathname = url.pathname.replace(/\/devtools\/browser\/.*$/, "");
     url.pathname = url.pathname.replace(/\/cdp$/, "");
     return url.toString().replace(/\/$/, "");
-  } catch {
+  } catch (err) {
+    bestEffortCatch("normalize CDP HTTP base URL")(err);
     // Best-effort fallback for non-URL-ish inputs.
     return cdpUrl
       .replace(/^ws:/, "http:")
@@ -114,8 +117,8 @@ function createCdpSender(ws: WebSocket) {
     pending.clear();
     try {
       ws.close();
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("close CDP WebSocket on error")(err);
     }
   };
 
@@ -139,8 +142,8 @@ function createCdpSender(ws: WebSocket) {
         return;
       }
       p.resolve(parsed.result);
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("parse CDP WebSocket message")(err);
     }
   });
 
@@ -239,8 +242,8 @@ export async function withCdpSocket<T>(
   } finally {
     try {
       ws.close();
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("close CDP WebSocket after use")(err);
     }
   }
 }

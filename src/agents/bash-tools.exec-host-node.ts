@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { loadConfig } from "../config/config.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { buildExecApprovalUnavailableReplyPayload } from "../infra/exec-approval-reply.js";
 import {
   hasConfiguredExecApprovalDmRoute,
@@ -317,7 +318,7 @@ export async function executeNodeHostCommand(
           turnSourceAccountId: params.turnSourceAccountId,
           turnSourceThreadId: params.turnSourceThreadId,
           resultText: `Exec denied (node=${nodeId} id=${approvalId}, ${deniedReason}): ${params.command}`,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send exec-denied approval followup"));
         return;
       }
 
@@ -359,7 +360,7 @@ export async function executeNodeHostCommand(
           turnSourceAccountId: params.turnSourceAccountId,
           turnSourceThreadId: params.turnSourceThreadId,
           resultText: summary,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send exec-finished approval followup"));
       } catch {
         await sendExecApprovalFollowup({
           approvalId,
@@ -369,7 +370,7 @@ export async function executeNodeHostCommand(
           turnSourceAccountId: params.turnSourceAccountId,
           turnSourceThreadId: params.turnSourceThreadId,
           resultText: `Exec denied (node=${nodeId} id=${approvalId}, invoke-failed): ${params.command}`,
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send exec-invoke-failed approval followup"));
       }
     })();
 

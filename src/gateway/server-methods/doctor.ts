@@ -1,5 +1,6 @@
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
+import { bestEffortCatchDebug } from "../../infra/best-effort.js";
 import { getMemorySearchManager } from "../../memory/index.js";
 import { formatError } from "../server-utils.js";
 import type { GatewayRequestHandlers } from "./types.js";
@@ -56,7 +57,7 @@ export const doctorHandlers: GatewayRequestHandlers = {
       };
       respond(true, payload, undefined);
     } finally {
-      await manager.close?.().catch(() => {});
+      await manager.close?.().catch(bestEffortCatchDebug("close memory manager"));
     }
   },
 };

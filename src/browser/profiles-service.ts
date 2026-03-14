@@ -4,6 +4,7 @@ import type { BrowserProfileConfig, OpenClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/config.js";
 import { deriveDefaultBrowserCdpPortRange } from "../config/port-defaults.js";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveOpenClawUserDataDir } from "./chrome.js";
 import { parseHttpUrl, resolveProfile } from "./config.js";
 import { DEFAULT_BROWSER_DEFAULT_PROFILE_NAME } from "./constants.js";
@@ -198,8 +199,8 @@ export function createBrowserProfilesService(ctx: BrowserRouteContext) {
     if (resolved?.cdpIsLoopback) {
       try {
         await ctx.forProfile(name).stopRunningBrowser();
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("stop running browser on profile delete")(err);
       }
 
       const userDataDir = resolveOpenClawUserDataDir(name);
