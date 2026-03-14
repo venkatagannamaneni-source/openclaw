@@ -9,6 +9,11 @@ import { getLogger } from "./logger.js";
  *
  * Safe to call from any context: if the logger itself fails the error is
  * silently discarded to avoid cascading failures.
+ *
+ * Related: `bestEffortCatch` in `src/infra/best-effort.ts` serves a similar
+ * role but returns a callback for `.catch()` chains and routes through
+ * SubsystemLogger. This utility is intentionally lighter (direct logger call)
+ * and safer (own try/catch guard) for use inside catch block bodies.
  */
 export function swallowed(context: string, err: unknown): void {
   try {
