@@ -1,4 +1,5 @@
 import { runCommandWithTimeout } from "../process/exec.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { isTailnetIPv4 } from "./tailnet.js";
 import { resolveWideAreaDiscoveryDomain } from "./widearea-dns.js";
 
@@ -305,8 +306,8 @@ async function discoverWideAreaViaTailnetDns(
       if (ips.length > 0) {
         break;
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("tailscale status for discovery")(err);
     }
   }
   if (ips.length === 0) {
@@ -353,8 +354,8 @@ async function discoverWideAreaViaTailnetDns(
         nameserver = ip;
         ptrs = lines;
         return;
-      } catch {
-        // ignore
+      } catch (err) {
+        bestEffortCatch("dig PTR for bonjour discovery")(err);
       }
     }
   };

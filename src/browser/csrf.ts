@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 
 function firstHeader(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
@@ -18,7 +19,8 @@ function isLoopbackUrl(value: string): boolean {
   try {
     const parsed = new URL(v);
     return isLoopbackHost(parsed.hostname);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse CSRF URL")(err);
     return false;
   }
 }

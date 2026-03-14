@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import type { ResolvedBrowserConfig } from "./config.js";
 
 export type BrowserExecutable = {
@@ -89,7 +90,8 @@ const CHROMIUM_EXE_NAMES = new Set([
 function exists(filePath: string) {
   try {
     return fs.existsSync(filePath);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("check file exists")(err);
     return false;
   }
 }
@@ -107,7 +109,8 @@ function execText(
       maxBuffer,
     });
     return String(output ?? "").trim() || null;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("exec command for browser detection")(err);
     return null;
   }
 }
@@ -219,7 +222,8 @@ function detectDefaultBrowserBundleIdMac(): string | null {
   let handlers: unknown;
   try {
     handlers = JSON.parse(handlersRaw);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse macOS launch services handlers")(err);
     return null;
   }
   if (!Array.isArray(handlers)) {
@@ -330,8 +334,8 @@ function readDesktopExecLine(desktopPath: string): string | null {
         return line.slice("Exec=".length).trim();
       }
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("read desktop file exec line")(err);
   }
   return null;
 }

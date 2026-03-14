@@ -12,6 +12,7 @@ import {
   parseCanonicalIpAddress,
   parseLooseIpAddress,
 } from "../../shared/net/ip.js";
+import { bestEffortCatch } from "../best-effort.js";
 import { normalizeHostname } from "./hostname.js";
 
 type LookupCallback = (
@@ -350,8 +351,8 @@ export async function closeDispatcher(dispatcher?: Dispatcher | null): Promise<v
     if (typeof candidate.destroy === "function") {
       candidate.destroy();
     }
-  } catch {
-    // ignore dispatcher cleanup errors
+  } catch (err) {
+    bestEffortCatch("close SSRF-guarded dispatcher")(err);
   }
 }
 

@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
 
@@ -14,7 +15,8 @@ export function buildRemoteBaseUrlPolicy(baseUrl: string): SsrFPolicy | undefine
     // Keep policy tied to the configured host so private operator endpoints
     // continue to work, while cross-host redirects stay blocked.
     return { allowedHostnames: [parsed.hostname] };
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse remote base URL")(err);
     return undefined;
   }
 }

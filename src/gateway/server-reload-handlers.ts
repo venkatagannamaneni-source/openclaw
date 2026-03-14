@@ -6,6 +6,7 @@ import { isRestartEnabled } from "../config/commands.js";
 import type { loadConfig } from "../config/config.js";
 import { startGmailWatcherWithLogs } from "../hooks/gmail-watcher-lifecycle.js";
 import { stopGmailWatcher } from "../hooks/gmail-watcher.js";
+import { bestEffortCatchDebug } from "../infra/best-effort.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { resetDirectoryCache } from "../infra/outbound/target-resolver.js";
@@ -85,7 +86,9 @@ export function createGatewayReloadHandlers(params: {
 
     if (plan.restartBrowserControl) {
       if (state.browserControl) {
-        await state.browserControl.stop().catch(() => {});
+        await state.browserControl
+          .stop()
+          .catch(bestEffortCatchDebug("stop browser control on reload"));
       }
       try {
         nextState.browserControl = await startBrowserControlServerIfEnabled();
@@ -102,7 +105,7 @@ export function createGatewayReloadHandlers(params: {
     }
 
     if (plan.restartGmailWatcher) {
-      await stopGmailWatcher().catch(() => {});
+      await stopGmailWatcher().catch(bestEffortCatchDebug("stop gmail watcher on reload"));
       await startGmailWatcherWithLogs({
         cfg: nextConfig,
         log: params.logHooks,

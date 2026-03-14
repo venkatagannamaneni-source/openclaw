@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { isChromeReachable, resolveOpenClawUserDataDir } from "./chrome.js";
 import type { ResolvedBrowserProfile } from "./config.js";
@@ -169,8 +170,8 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
           const ctx = createProfileContext(opts, profile);
           const tabs = await ctx.listTabs();
           tabCount = tabs.filter((t) => t.type === "page").length;
-        } catch {
-          // Browser might not be responsive
+        } catch (err) {
+          bestEffortCatch("list browser tabs for status")(err);
         }
       } else {
         // Check if something is listening on the port
@@ -182,8 +183,8 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
             const tabs = await ctx.listTabs().catch(() => []);
             tabCount = tabs.filter((t) => t.type === "page").length;
           }
-        } catch {
-          // Not reachable
+        } catch (err) {
+          bestEffortCatch("probe Chrome reachability for status")(err);
         }
       }
 

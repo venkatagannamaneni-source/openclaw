@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type PluginInstallPathIssue = {
   kind: "custom-path" | "missing-path";
@@ -37,8 +38,8 @@ export async function detectPluginInstallPathIssue(params: {
         pluginId: params.pluginId,
         path: candidatePath,
       };
-    } catch {
-      // Keep checking remaining candidate paths before warning about a stale install.
+    } catch (err) {
+      bestEffortCatch("check plugin install candidate path")(err);
     }
   }
 

@@ -14,6 +14,7 @@ import { readBooleanParam as readBooleanParamShared } from "../../plugin-sdk/boo
 import { parseSlackTarget } from "../../slack/targets.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
 import { loadWebMedia } from "../../web/media.js";
+import { bestEffortCatch } from "../best-effort.js";
 
 export const readBooleanParam = readBooleanParamShared;
 
@@ -126,8 +127,8 @@ function inferAttachmentFilename(params: {
           return base;
         }
       }
-    } catch {
-      // fall through to content-type based default
+    } catch (err) {
+      bestEffortCatch("parse media filename hint")(err);
     }
   }
   const ext = params.contentType ? extensionForMime(params.contentType) : undefined;

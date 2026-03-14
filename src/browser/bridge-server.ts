@@ -2,6 +2,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import express from "express";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { deleteBridgeAuthForPort, setBridgeAuthForPort } from "./bridge-auth-registry.js";
 import type { ResolvedBrowserConfig } from "./config.js";
 import { registerBrowserRoutes } from "./routes/index.js";
@@ -137,8 +138,8 @@ export async function stopBrowserBridgeServer(server: Server): Promise<void> {
     if (address?.port) {
       deleteBridgeAuthForPort(address.port);
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("delete bridge auth on stop")(err);
   }
   await new Promise<void>((resolve) => {
     server.close(() => resolve());

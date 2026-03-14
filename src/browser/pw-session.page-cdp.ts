@@ -1,4 +1,5 @@
 import type { CDPSession, Page } from "playwright-core";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import {
   appendCdpPath,
   fetchJson,
@@ -33,7 +34,8 @@ export async function isExtensionRelayCdpEndpoint(cdpUrl: string): Promise<boole
     const isRelay = String(version?.Browser ?? "").trim() === OPENCLAW_EXTENSION_RELAY_BROWSER;
     extensionRelayByCdpUrl.set(normalized, isRelay);
     return isRelay;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("probe extension relay CDP endpoint")(err);
     extensionRelayByCdpUrl.set(normalized, false);
     return false;
   }
@@ -47,7 +49,7 @@ async function withPlaywrightPageCdpSession<T>(
   try {
     return await fn(session);
   } finally {
-    await session.detach().catch(() => {});
+    await session.detach().catch(bestEffortCatch("detach Playwright CDP session"));
   }
 }
 

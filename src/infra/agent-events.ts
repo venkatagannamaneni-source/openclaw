@@ -1,4 +1,5 @@
 import type { VerboseLevel } from "../auto-reply/thinking.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type AgentEventStream = "lifecycle" | "tool" | "assistant" | "error" | (string & {});
 
@@ -76,8 +77,8 @@ export function emitAgentEvent(event: Omit<AgentEventPayload, "seq" | "ts">) {
   for (const listener of listeners) {
     try {
       listener(enriched);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      bestEffortCatch("agent event listener")(err);
     }
   }
 }

@@ -16,6 +16,7 @@ import {
   normalizeMessageChannel,
   type DeliverableMessageChannel,
 } from "../utils/message-channel.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveExecApprovalCommandDisplay } from "./exec-approval-command-display.js";
 import { buildExecApprovalPendingReplyPayload } from "./exec-approval-reply.js";
 import type {
@@ -349,7 +350,7 @@ async function deliverToTargets(params: {
           cfg: params.cfg,
           accountId: target.accountId,
           ...(Number.isFinite(threadId) ? { messageThreadId: threadId } : {}),
-        }).catch(() => {});
+        }).catch(bestEffortCatch("send typing indicator for exec approval"));
       }
       await params.deliver({
         cfg: params.cfg,

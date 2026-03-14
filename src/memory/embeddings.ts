@@ -2,6 +2,7 @@ import fsSync from "node:fs";
 import type { Llama, LlamaEmbeddingContext, LlamaModel } from "node-llama-cpp";
 import type { OpenClawConfig } from "../config/config.js";
 import type { SecretInput } from "../config/types.secrets.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveUserPath } from "../utils.js";
 import type { EmbeddingInput } from "./embedding-inputs.js";
@@ -92,7 +93,8 @@ function canAutoSelectLocal(options: EmbeddingProviderOptions): boolean {
   const resolved = resolveUserPath(modelPath);
   try {
     return fsSync.statSync(resolved).isFile();
-  } catch {
+  } catch (err) {
+    bestEffortCatch("stat local embedding model")(err);
     return false;
   }
 }

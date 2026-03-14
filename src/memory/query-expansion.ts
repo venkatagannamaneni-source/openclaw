@@ -1,3 +1,5 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
+
 /**
  * Query expansion for FTS-only search mode.
  *
@@ -800,8 +802,8 @@ export async function expandQueryWithLlm(
       if (llmKeywords.length > 0) {
         return llmKeywords;
       }
-    } catch {
-      // LLM failed, fall back to local extraction
+    } catch (err) {
+      bestEffortCatch("LLM query expansion")(err);
     }
   }
 

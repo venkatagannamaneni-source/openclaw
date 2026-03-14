@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
@@ -85,8 +86,8 @@ export async function resolveControlUiDistIndexPath(
     if (realpathEntrypoint !== normalized) {
       entrypointCandidates.push(realpathEntrypoint);
     }
-  } catch {
-    // Ignore missing/non-realpath argv1 and keep path-based candidates.
+  } catch (err) {
+    bestEffortCatch("realpath entrypoint for control UI")(err);
   }
 
   // Case 1: entrypoint is directly inside dist/ (e.g., dist/entry.js).

@@ -1,6 +1,7 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { loadConfig } from "../config/config.js";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { getBridgeAuthForPort } from "./bridge-auth-registry.js";
 import { resolveBrowserControlAuth } from "./control-auth.js";
 import {
@@ -31,7 +32,8 @@ function isAbsoluteHttp(url: string): boolean {
 function isLoopbackHttpUrl(url: string): boolean {
   try {
     return isLoopbackHost(new URL(url).hostname);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse loopback HTTP URL")(err);
     return false;
   }
 }
@@ -60,8 +62,8 @@ function withLoopbackBrowserAuthImpl(
       headers.set("x-openclaw-password", auth.password);
       return { ...init, headers };
     }
-  } catch {
-    // ignore config/auth lookup failures and continue without auth headers
+  } catch (err) {
+    bestEffortCatch("resolve browser control auth")(err);
   }
 
   // Sandbox bridge servers can run with per-process ephemeral auth on dynamic ports.
@@ -80,8 +82,8 @@ function withLoopbackBrowserAuthImpl(
     } else if (bridgeAuth?.password) {
       headers.set("x-openclaw-password", bridgeAuth.password);
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("resolve bridge auth for port")(err);
   }
 
   return { ...init, headers };
@@ -121,7 +123,8 @@ function isBrowserbaseUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname.toLowerCase();
     return host === "browserbase.com" || host.endsWith(".browserbase.com");
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse browserbase URL")(err);
     return false;
   }
 }
@@ -156,8 +159,8 @@ function appendBrowserToolModelHint(message: string): string {
 async function discardResponseBody(res: Response): Promise<void> {
   try {
     await res.body?.cancel();
-  } catch {
-    // Best effort only; we're already returning a stable error message.
+  } catch (err) {
+    bestEffortCatch("discard HTTP response body")(err);
   }
 }
 
@@ -258,8 +261,8 @@ export async function fetchBrowserJson<T>(
     if (typeof body === "string") {
       try {
         body = JSON.parse(body);
-      } catch {
-        // keep as string
+      } catch (err) {
+        bestEffortCatch("parse request body as JSON")(err);
       }
     }
 

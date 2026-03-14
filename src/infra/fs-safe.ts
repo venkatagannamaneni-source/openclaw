@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { logWarn } from "../logger.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { sameFileIdentity } from "./file-identity.js";
 import { runPinnedWriteHelper } from "./fs-pinned-write-helper.js";
 import { expandHomePrefix } from "./home-dir.js";
@@ -72,8 +73,8 @@ async function expandRelativePathWithHome(relativePath: string): Promise<string>
   let home = process.env.HOME || process.env.USERPROFILE || os.homedir();
   try {
     home = await fs.realpath(home);
-  } catch {
-    // If the home dir cannot be canonicalized, keep lexical expansion behavior.
+  } catch (err) {
+    bestEffortCatch("canonicalize home dir")(err);
   }
   return expandHomePrefix(relativePath, { home });
 }
@@ -141,7 +142,7 @@ async function openVerifiedLocalFile(
 
     return { handle, realPath, stat };
   } catch (err) {
-    await handle.close().catch(() => {});
+    await handle.close().catch(bestEffortCatch("close file handle"));
     if (err instanceof SafeOpenError) {
       throw err;
     }
@@ -197,12 +198,12 @@ export async function openFileWithinRoot(params: {
   }
 
   if (params.rejectHardlinks !== false && opened.stat.nlink > 1) {
-    await opened.handle.close().catch(() => {});
+    await opened.handle.close().catch(bestEffortCatch("close file handle"));
     throw new SafeOpenError("invalid-path", "hardlinked path not allowed");
   }
 
   if (!isPathInside(rootWithSep, opened.realPath)) {
-    await opened.handle.close().catch(() => {});
+    await opened.handle.close().catch(bestEffortCatch("close file handle"));
     throw new SafeOpenError("outside-workspace", "file is outside workspace root");
   }
 
@@ -223,7 +224,7 @@ export async function readFileWithinRoot(params: {
   try {
     return await readOpenedFileSafely({ opened, maxBytes: params.maxBytes });
   } finally {
-    await opened.handle.close().catch(() => {});
+    await opened.handle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -271,7 +272,7 @@ export async function readLocalFileSafely(params: {
   try {
     return await readOpenedFileSafely({ opened, maxBytes: params.maxBytes });
   } finally {
-    await opened.handle.close().catch(() => {});
+    await opened.handle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -325,7 +326,7 @@ async function writeTempFileForAtomicReplace(params: {
     }
     return await tempHandle.stat();
   } finally {
-    await tempHandle.close().catch(() => {});
+    await tempHandle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -345,7 +346,7 @@ async function verifyAtomicWriteResult(params: {
       throw new SafeOpenError("outside-workspace", "file is outside workspace root");
     }
   } finally {
-    await opened.handle.close().catch(() => {});
+    await opened.handle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -370,8 +371,8 @@ export async function resolveOpenedFileRealPathForHandle(
   for (const fdPath of fdCandidates) {
     try {
       return await fs.realpath(fdPath);
-    } catch {
-      // try next fd path
+    } catch (err) {
+      bestEffortCatch("resolve fd path")(err);
     }
   }
   throw new SafeOpenError("path-mismatch", "unable to resolve opened file path");
@@ -492,9 +493,9 @@ export async function openWritableFileWithinRoot(params: {
   } catch (err) {
     const cleanupCreatedPath = createdForWrite && err instanceof SafeOpenError;
     const cleanupPath = openedRealPath ?? ioPath;
-    await handle.close().catch(() => {});
+    await handle.close().catch(bestEffortCatch("close file handle"));
     if (cleanupCreatedPath) {
-      await fs.rm(cleanupPath, { force: true }).catch(() => {});
+      await fs.rm(cleanupPath, { force: true }).catch(bestEffortCatch("rm cleanup path"));
     }
     throw err;
   }
@@ -540,7 +541,7 @@ export async function appendFileWithinRoot(params: {
       prefix.length > 0 ? Buffer.concat([Buffer.from(prefix, "utf8"), params.data]) : params.data;
     await target.handle.appendFile(payload);
   } finally {
-    await target.handle.close().catch(() => {});
+    await target.handle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -600,7 +601,7 @@ export async function copyFileWithinRoot(params: {
     rejectHardlinks: params.rejectSourceHardlinks,
   });
   if (params.maxBytes !== undefined && source.stat.size > params.maxBytes) {
-    await source.handle.close().catch(() => {});
+    await source.handle.close().catch(bestEffortCatch("close file handle"));
     throw new SafeOpenError(
       "too-large",
       `file exceeds limit of ${params.maxBytes} bytes (got ${source.stat.size})`,
@@ -642,7 +643,7 @@ export async function copyFileWithinRoot(params: {
       throw err;
     }
   } finally {
-    await source.handle.close().catch(() => {});
+    await source.handle.close().catch(bestEffortCatch("close file handle"));
   }
 }
 
@@ -706,7 +707,7 @@ async function resolvePinnedWriteTargetWithinRoot(params: {
         throw new SafeOpenError("outside-workspace", "file is outside workspace root");
       }
     } finally {
-      await opened.handle.close().catch(() => {});
+      await opened.handle.close().catch(bestEffortCatch("close file handle"));
     }
   } catch (err) {
     if (!(err instanceof SafeOpenError) || err.code !== "not-found") {
@@ -748,7 +749,7 @@ async function writeFileWithinRootLegacy(params: {
   });
   const destinationPath = target.openedRealPath;
   const targetMode = target.openedStat.mode & 0o777;
-  await target.handle.close().catch(() => {});
+  await target.handle.close().catch(bestEffortCatch("close file handle"));
   let tempPath: string | null = null;
   try {
     tempPath = buildAtomicWriteTempPath(destinationPath);
@@ -772,7 +773,7 @@ async function writeFileWithinRootLegacy(params: {
     }
   } finally {
     if (tempPath) {
-      await fs.rm(tempPath, { force: true }).catch(() => {});
+      await fs.rm(tempPath, { force: true }).catch(bestEffortCatch("rm temp file"));
     }
   }
 }
@@ -803,7 +804,7 @@ async function copyFileWithinRootLegacy(
     });
     const destinationPath = target.openedRealPath;
     const targetMode = target.openedStat.mode & 0o777;
-    await target.handle.close().catch(() => {});
+    await target.handle.close().catch(bestEffortCatch("close file handle"));
     targetClosedByUs = true;
 
     tempPath = buildAtomicWriteTempPath(destinationPath);
@@ -821,7 +822,7 @@ async function copyFileWithinRootLegacy(
     );
     const writtenStat = await fs.stat(tempPath);
     if (!tempClosedByStream) {
-      await tempHandle.close().catch(() => {});
+      await tempHandle.close().catch(bestEffortCatch("close file handle"));
       tempClosedByStream = true;
     }
     tempHandle = null;
@@ -839,21 +840,23 @@ async function copyFileWithinRootLegacy(
     }
   } catch (err) {
     if (target?.createdForWrite) {
-      await fs.rm(target.openedRealPath, { force: true }).catch(() => {});
+      await fs
+        .rm(target.openedRealPath, { force: true })
+        .catch(bestEffortCatch("rm created file on error"));
     }
     throw err;
   } finally {
     if (tempPath) {
-      await fs.rm(tempPath, { force: true }).catch(() => {});
+      await fs.rm(tempPath, { force: true }).catch(bestEffortCatch("rm temp file"));
     }
     if (!sourceClosedByStream) {
-      await source.handle.close().catch(() => {});
+      await source.handle.close().catch(bestEffortCatch("close file handle"));
     }
     if (tempHandle && !tempClosedByStream) {
-      await tempHandle.close().catch(() => {});
+      await tempHandle.close().catch(bestEffortCatch("close file handle"));
     }
     if (target && !targetClosedByUs) {
-      await target.handle.close().catch(() => {});
+      await target.handle.close().catch(bestEffortCatch("close file handle"));
     }
   }
 }

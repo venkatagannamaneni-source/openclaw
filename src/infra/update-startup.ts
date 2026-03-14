@@ -6,6 +6,7 @@ import type { loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { VERSION } from "../version.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { writeJsonAtomic } from "./json-files.js";
 import { resolveOpenClawPackageRoot } from "./openclaw-root.js";
 import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";
@@ -259,8 +260,8 @@ async function runAutoUpdateCommand(params: {
         await fs.access(candidate);
         argv.push(execPath, candidate, ...baseArgs);
         break;
-      } catch {
-        // try next candidate
+      } catch (err) {
+        bestEffortCatch("access update script candidate")(err);
       }
     }
   }
@@ -501,8 +502,8 @@ export function scheduleGatewayUpdateCheck(params: {
     running = true;
     try {
       await runGatewayUpdateCheck(params);
-    } catch {
-      // Intentionally ignored: update checks should never crash the gateway loop.
+    } catch (err) {
+      bestEffortCatch("gateway update check")(err);
     } finally {
       running = false;
     }

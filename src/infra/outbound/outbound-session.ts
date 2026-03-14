@@ -23,6 +23,7 @@ import { resolveTelegramTargetChatType } from "../../telegram/inline-buttons.js"
 import { parseTelegramThreadId } from "../../telegram/outbound-params.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
+import { bestEffortCatch } from "../best-effort.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 
 export type OutboundSessionRoute = {
@@ -987,7 +988,7 @@ export async function ensureOutboundSessionEntry(params: {
       sessionKey: params.route.sessionKey,
       ctx,
     });
-  } catch {
-    // Do not block outbound sends on session meta writes.
+  } catch (err) {
+    bestEffortCatch("record outbound session meta")(err);
   }
 }

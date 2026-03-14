@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import {
   DEFAULT_OPENCLAW_BROWSER_COLOR,
   DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
@@ -20,7 +21,8 @@ function safeReadJson(filePath: string): Record<string, unknown> | null {
       return null;
     }
     return parsed as Record<string, unknown>;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("read browser profile JSON")(err);
     return null;
   }
 }
@@ -184,8 +186,8 @@ export function decorateOpenClawProfile(
 
   try {
     fs.writeFileSync(decoratedMarkerPath(userDataDir), `${Date.now()}\n`, "utf-8");
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("write profile decoration marker")(err);
   }
 }
 

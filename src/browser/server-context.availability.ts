@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import {
   PROFILE_ATTACH_RETRY_TIMEOUT_MS,
   PROFILE_POST_RESTART_WS_TIMEOUT_MS,
@@ -87,8 +88,8 @@ export function createProfileAvailability({
     try {
       const mod = await import("./pw-ai.js");
       await mod.closePlaywrightBrowserConnection(cdpUrl ? { cdpUrl } : undefined);
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("close Playwright browser connection")(err);
     }
   };
 
@@ -103,11 +104,15 @@ export function createProfileAvailability({
 
     const previousProfile = reconcile.previousProfile;
     if (profileState.running) {
-      await stopOpenClawChrome(profileState.running).catch(() => {});
+      await stopOpenClawChrome(profileState.running).catch(
+        bestEffortCatch("stop OpenClaw Chrome on reconcile"),
+      );
       setProfileRunning(null);
     }
     if (previousProfile.driver === "extension") {
-      await stopChromeExtensionRelayServer({ cdpUrl: previousProfile.cdpUrl }).catch(() => false);
+      await stopChromeExtensionRelayServer({ cdpUrl: previousProfile.cdpUrl }).catch(
+        bestEffortCatch("stop extension relay on reconcile"),
+      );
     }
     await closePlaywrightBrowserConnectionForProfile(previousProfile.cdpUrl);
     if (previousProfile.cdpUrl !== profile.cdpUrl) {
@@ -187,7 +192,9 @@ export function createProfileAvailability({
       try {
         await waitForCdpReadyAfterLaunch();
       } catch (err) {
-        await stopOpenClawChrome(launched).catch(() => {});
+        await stopOpenClawChrome(launched).catch(
+          bestEffortCatch("stop Chrome after failed CDP ready"),
+        );
         setProfileRunning(null);
         throw err;
       }

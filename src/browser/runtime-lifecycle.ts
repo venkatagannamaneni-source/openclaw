@@ -1,4 +1,5 @@
 import type { Server } from "node:http";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { isPwAiLoaded } from "./pw-ai-state.js";
 import type { BrowserServerState } from "./server-context.js";
 import { ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } from "./server-lifecycle.js";
@@ -54,7 +55,7 @@ export async function stopBrowserRuntime(params: {
   try {
     const mod = await import("./pw-ai.js");
     await mod.closePlaywrightBrowserConnection();
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("close Playwright browser connection on stop")(err);
   }
 }

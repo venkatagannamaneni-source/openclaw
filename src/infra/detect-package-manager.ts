@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type DetectedPackageManager = "pnpm" | "bun" | "npm";
 
@@ -11,8 +12,8 @@ export async function detectPackageManager(root: string): Promise<DetectedPackag
     if (pm === "pnpm" || pm === "bun" || pm === "npm") {
       return pm;
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("read package.json for package manager")(err);
   }
 
   const files = await fs.readdir(root).catch((): string[] => []);

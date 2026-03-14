@@ -7,6 +7,7 @@ import type {
   Response,
 } from "playwright-core";
 import { chromium } from "playwright-core";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
 import { withNoProxyForCdpUrl } from "./cdp-proxy-bypass.js";
@@ -402,7 +403,7 @@ async function pageTargetId(page: Page): Promise<string | null> {
     const targetId = String(info?.targetInfo?.targetId ?? "").trim();
     return targetId || null;
   } finally {
-    await session.detach().catch(() => {});
+    await session.detach().catch(bestEffortCatch("detach CDP session after pageTargetId"));
   }
 }
 
@@ -463,8 +464,8 @@ async function findPageByTargetId(
       if (matched) {
         return matched;
       }
-    } catch {
-      // Ignore fetch errors and fall through to best-effort single-page fallback.
+    } catch (err) {
+      bestEffortCatch("find page by target list via extension relay")(err);
     }
     return pages.length === 1 ? (pages[0] ?? null) : null;
   }
@@ -475,7 +476,8 @@ async function findPageByTargetId(
     try {
       tid = await pageTargetId(page);
       resolvedViaCdp = true;
-    } catch {
+    } catch (err) {
+      bestEffortCatch("resolve page targetId via CDP")(err);
       tid = null;
     }
     if (tid && tid === targetId) {
@@ -485,8 +487,8 @@ async function findPageByTargetId(
   if (cdpUrl) {
     try {
       return await findPageByTargetIdViaTargetList(pages, targetId, cdpUrl);
-    } catch {
-      // Ignore fetch errors and fall through to return null.
+    } catch (err) {
+      bestEffortCatch("find page by target list fallback")(err);
     }
   }
   if (!resolvedViaCdp && pages.length === 1) {
@@ -585,7 +587,7 @@ export async function closePlaywrightBrowserConnection(opts?: { cdpUrl?: string 
     if (cur.onDisconnected && typeof cur.browser.off === "function") {
       cur.browser.off("disconnected", cur.onDisconnected);
     }
-    await cur.browser.close().catch(() => {});
+    await cur.browser.close().catch(bestEffortCatch("close browser connection"));
     return;
   }
 
@@ -596,7 +598,7 @@ export async function closePlaywrightBrowserConnection(opts?: { cdpUrl?: string 
     if (cur.onDisconnected && typeof cur.browser.off === "function") {
       cur.browser.off("disconnected", cur.onDisconnected);
     }
-    await cur.browser.close().catch(() => {});
+    await cur.browser.close().catch(bestEffortCatch("close browser connection"));
   }
 }
 
@@ -606,7 +608,8 @@ function cdpSocketNeedsAttach(wsUrl: string): boolean {
     return (
       pathname === "/cdp" || pathname.endsWith("/cdp") || pathname.includes("/devtools/browser/")
     );
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse CDP URL pathname")(err);
     return false;
   }
 }
@@ -667,14 +670,16 @@ async function tryTerminateExecutionViaCdp(opts: {
         await runWithTimeout(send("Runtime.terminateExecution", undefined, sessionId), 1500);
         if (sessionId) {
           // Best-effort cleanup; not required for termination to take effect.
-          void send("Target.detachFromTarget", { sessionId }).catch(() => {});
+          void send("Target.detachFromTarget", { sessionId }).catch(
+            bestEffortCatch("detach CDP target after termination"),
+          );
         }
-      } catch {
-        // Best-effort; ignore
+      } catch (err) {
+        bestEffortCatch("terminate execution via CDP")(err);
       }
     },
     { handshakeTimeoutMs: 2000 },
-  ).catch(() => {});
+  ).catch(bestEffortCatch("terminate execution via CDP socket"));
 }
 
 /**
@@ -721,11 +726,13 @@ export async function forceDisconnectPlaywrightForTarget(opts: {
   // disconnect Playwright's CDP connection.
   const targetId = opts.targetId?.trim() || "";
   if (targetId) {
-    await tryTerminateExecutionViaCdp({ cdpUrl: normalized, targetId }).catch(() => {});
+    await tryTerminateExecutionViaCdp({ cdpUrl: normalized, targetId }).catch(
+      bestEffortCatch("terminate execution before disconnect"),
+    );
   }
 
   // Fire-and-forget: don't await because browser.close() may hang on the stuck CDP pipe.
-  cur.browser.close().catch(() => {});
+  cur.browser.close().catch(bestEffortCatch("close browser after force disconnect"));
 }
 
 /**
@@ -855,7 +862,8 @@ export async function focusPageByTargetIdViaPlaywright(opts: {
         },
       });
       return;
-    } catch {
+    } catch (fallbackErr) {
+      bestEffortCatch("focus page via CDP fallback")(fallbackErr);
       throw err;
     }
   }

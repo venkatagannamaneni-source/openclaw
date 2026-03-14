@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { SafeOpenError, openFileWithinRoot } from "../infra/fs-safe.js";
 import { isNotFoundPathError, isPathInside } from "../infra/path-guards.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
@@ -21,7 +22,8 @@ function invalidPath(scopeLabel: string): InvalidPathResult {
 async function resolveRealPathIfExists(targetPath: string): Promise<string | undefined> {
   try {
     return await fs.realpath(targetPath);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("resolve real path")(err);
     return undefined;
   }
 }
@@ -33,7 +35,8 @@ async function resolveTrustedRootRealPath(rootDir: string): Promise<string | und
       return undefined;
     }
     return await fs.realpath(rootDir);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("resolve trusted root real path")(err);
     return undefined;
   }
 }
@@ -249,7 +252,7 @@ async function resolveCheckedPathsWithinRoot(params: {
         error: `Invalid path: must stay within ${params.scopeLabel} and be a regular non-symlink file`,
       };
     } finally {
-      await opened?.handle.close().catch(() => {});
+      await opened?.handle.close().catch(bestEffortCatch("close file handle after path check"));
     }
   }
   return { ok: true, paths: resolvedPaths };

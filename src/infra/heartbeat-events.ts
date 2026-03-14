@@ -1,3 +1,5 @@
+import { bestEffortCatch } from "./best-effort.js";
+
 export type HeartbeatIndicatorType = "ok" | "alert" | "error";
 
 export type HeartbeatEventPayload = {
@@ -42,8 +44,8 @@ export function emitHeartbeatEvent(evt: Omit<HeartbeatEventPayload, "ts">) {
   for (const listener of listeners) {
     try {
       listener(enriched);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      bestEffortCatch("heartbeat event listener")(err);
     }
   }
 }

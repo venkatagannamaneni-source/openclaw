@@ -13,6 +13,7 @@ import type { SessionEntry } from "../config/sessions/types.js";
 import { stripEnvelope, stripMessageIdHints } from "../shared/chat-envelope.js";
 import { countToolResults, extractToolCallNames } from "../utils/transcript-tools.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../utils/usage-format.js";
+import { bestEffortCatch } from "./best-effort.js";
 import type {
   CostBreakdown,
   CostUsageTotals,
@@ -229,8 +230,8 @@ async function* readJsonlRecords(filePath: string): AsyncGenerator<Record<string
           continue;
         }
         yield parsed as Record<string, unknown>;
-      } catch {
-        // Ignore malformed lines
+      } catch (err) {
+        bestEffortCatch("parse session cost JSONL line")(err);
       }
     }
   } finally {
@@ -439,12 +440,12 @@ export async function discoverAllSessions(params?: {
             }
             break; // Found first user message
           }
-        } catch {
-          // Skip malformed lines
+        } catch (err) {
+          bestEffortCatch("parse session transcript line")(err);
         }
       }
-    } catch {
-      // Ignore read errors
+    } catch (err) {
+      bestEffortCatch("read session transcript file")(err);
     }
 
     discovered.push({
@@ -999,8 +1000,8 @@ export async function loadSessionLogs(params: {
         tokens,
         cost,
       });
-    } catch {
-      // Ignore malformed lines
+    } catch (err) {
+      bestEffortCatch("parse session usage JSONL line")(err);
     }
   }
 

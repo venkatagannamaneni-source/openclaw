@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { resolveGatewayPort } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveLsofCommandSync } from "./ports-lsof.js";
 
 const SPAWN_TIMEOUT_MS = 2000;
@@ -189,8 +190,8 @@ function terminateStaleProcessesSync(pids: number[]): number[] {
     try {
       process.kill(pid, "SIGTERM");
       killed.push(pid);
-    } catch {
-      // ESRCH — already gone
+    } catch (err) {
+      bestEffortCatch("SIGTERM stale gateway pid")(err);
     }
   }
   if (killed.length === 0) {
@@ -201,8 +202,8 @@ function terminateStaleProcessesSync(pids: number[]): number[] {
     try {
       process.kill(pid, 0);
       process.kill(pid, "SIGKILL");
-    } catch {
-      // already gone
+    } catch (err) {
+      bestEffortCatch("SIGKILL stale gateway pid")(err);
     }
   }
   sleepSync(STALE_SIGKILL_WAIT_MS);

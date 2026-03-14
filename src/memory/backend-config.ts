@@ -11,6 +11,7 @@ import type {
   MemoryQmdMcporterConfig,
   MemoryQmdSearchMode,
 } from "../config/types.memory.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveUserPath } from "../utils.js";
 import { splitShellArgs } from "../utils/shell-argv.js";
 
@@ -146,7 +147,8 @@ function resolveIntervalMs(raw: string | undefined): number {
   }
   try {
     return parseDurationMs(value, { defaultUnit: "m" });
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse qmd interval")(err);
     return parseDurationMs(DEFAULT_QMD_INTERVAL, { defaultUnit: "m" });
   }
 }
@@ -158,7 +160,8 @@ function resolveEmbedIntervalMs(raw: string | undefined): number {
   }
   try {
     return parseDurationMs(value, { defaultUnit: "m" });
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse qmd embed interval")(err);
     return parseDurationMs(DEFAULT_QMD_EMBED_INTERVAL, { defaultUnit: "m" });
   }
 }
@@ -235,7 +238,8 @@ function resolveCustomPaths(
     let resolved: string;
     try {
       resolved = resolvePath(trimmedPath, workspaceDir);
-    } catch {
+    } catch (err) {
+      bestEffortCatch("resolve qmd collection path")(err);
       return;
     }
     const pattern = entry.pattern?.trim() || "**/*.md";

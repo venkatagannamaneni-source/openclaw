@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import chokidar from "chokidar";
 import type { OpenClawConfig, ConfigFileSnapshot, GatewayReloadMode } from "../config/config.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
+import { bestEffortCatchDebug } from "../infra/best-effort.js";
 import { isPlainObject } from "../utils.js";
 import { buildGatewayReloadPlan, type GatewayReloadPlan } from "./config-reload-plan.js";
 
@@ -230,7 +231,7 @@ export function startGatewayConfigReloader(opts: {
     }
     watcherClosed = true;
     opts.log.warn(`config watcher error: ${String(err)}`);
-    void watcher.close().catch(() => {});
+    void watcher.close().catch(bestEffortCatchDebug("close config watcher on error"));
   });
 
   return {
@@ -241,7 +242,7 @@ export function startGatewayConfigReloader(opts: {
       }
       debounceTimer = null;
       watcherClosed = true;
-      await watcher.close().catch(() => {});
+      await watcher.close().catch(bestEffortCatchDebug("close config watcher"));
     },
   };
 }

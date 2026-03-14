@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { bestEffortCatch } from "./best-effort.js";
 import { resolveGitHeadPath } from "./git-root.js";
 import { resolveOpenClawPackageRootSync } from "./openclaw-root.js";
 
@@ -43,8 +44,8 @@ const resolveCommitSearchDir = (options: { cwd?: string; moduleUrl?: string }) =
   if (options.moduleUrl) {
     try {
       return path.dirname(fileURLToPath(options.moduleUrl));
-    } catch {
-      // moduleUrl is not a valid file:// URL; fall back to process.cwd().
+    } catch (err) {
+      bestEffortCatch("parse moduleUrl for git commit search")(err);
     }
   }
   return process.cwd();
@@ -171,8 +172,8 @@ const readCommitFromBuildInfo = () => {
         if (formatted) {
           return formatted;
         }
-      } catch {
-        // ignore missing candidate
+      } catch (err) {
+        bestEffortCatch("read build-info candidate")(err);
       }
     }
     return null;
@@ -210,8 +211,8 @@ export const resolveCommitHash = (
     if (gitCommit !== undefined) {
       return cacheGitCommit(searchDir, gitCommit);
     }
-  } catch {
-    // Fall through to baked metadata for packaged installs that are not in a live checkout.
+  } catch (err) {
+    bestEffortCatch("read git commit from live checkout")(err);
   }
   const buildInfoCommit = readers.readBuildInfoCommit?.() ?? readCommitFromBuildInfo();
   if (buildInfoCommit) {

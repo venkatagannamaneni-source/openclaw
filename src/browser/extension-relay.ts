@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import type { Duplex } from "node:stream";
 import WebSocket, { WebSocketServer } from "ws";
 import { isLoopbackAddress, isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { rawDataToString } from "../infra/ws.js";
 import {
   probeAuthenticatedOpenClawRelay,
@@ -169,8 +170,8 @@ function rejectUpgrade(socket: Duplex, status: number, bodyText: string) {
   text(socket, status, bodyText);
   try {
     socket.destroy();
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("destroy rejected upgrade socket")(err);
   }
 }
 
@@ -209,7 +210,8 @@ function relayAuthTokenForUrl(url: string): string | null {
       return null;
     }
     return relayRuntimeByPort.get(port)?.relayAuthToken ?? null;
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse relay auth URL")(err);
     return null;
   }
 }
@@ -295,8 +297,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
       for (const client of cdpClients) {
         try {
           client.close(1011, "extension disconnected");
-        } catch {
-          // ignore
+        } catch (err) {
+          bestEffortCatch("close CDP client after extension disconnect")(err);
         }
       }
       cdpClients.clear();
@@ -646,7 +648,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
         let targetId = "";
         try {
           targetId = decodeURIComponent(match[1] ?? "").trim();
-        } catch {
+        } catch (err) {
+          bestEffortCatch("decode targetId URI component")(err);
           res.writeHead(400);
           res.end("invalid targetId encoding");
           return true;
@@ -663,8 +666,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
               method: "forwardCDPCommand",
               params: { method: cdpMethod, params: { targetId } },
             });
-          } catch {
-            // ignore
+          } catch (err) {
+            bestEffortCatch("forward target action to extension")(err);
           }
         })();
         res.writeHead(200);
@@ -716,8 +719,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
         if (extensionWs && extensionWs.readyState !== WebSocket.OPEN) {
           try {
             extensionWs.terminate();
-          } catch {
-            // ignore
+          } catch (err) {
+            bestEffortCatch("terminate stale extension WebSocket")(err);
           }
           extensionWs = null;
         }
@@ -767,7 +770,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
         let parsed: ExtensionMessage | null = null;
         try {
           parsed = JSON.parse(rawDataToString(data)) as ExtensionMessage;
-        } catch {
+        } catch (err) {
+          bestEffortCatch("parse extension WebSocket message")(err);
           return;
         }
 
@@ -901,7 +905,8 @@ export async function ensureChromeExtensionRelayServer(opts: {
         let cmd: CdpCommand | null = null;
         try {
           cmd = JSON.parse(rawDataToString(data)) as CdpCommand;
-        } catch {
+        } catch (err) {
+          bestEffortCatch("parse CDP client WebSocket message")(err);
           return;
         }
         if (!cmd || typeof cmd !== "object") {
@@ -1028,14 +1033,14 @@ export async function ensureChromeExtensionRelayServer(opts: {
         pendingExtension.clear();
         try {
           extensionWs?.close(1001, "server stopping");
-        } catch {
-          // ignore
+        } catch (err) {
+          bestEffortCatch("close extension WebSocket on stop")(err);
         }
         for (const ws of cdpClients) {
           try {
             ws.close(1001, "server stopping");
-          } catch {
-            // ignore
+          } catch (err) {
+            bestEffortCatch("close CDP client WebSocket on stop")(err);
           }
         }
         await new Promise<void>((resolve) => {

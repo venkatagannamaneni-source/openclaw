@@ -12,6 +12,8 @@
  *   18792-18799 - Reserved for future one-off services (canvas at 18793)
  */
 
+import { bestEffortCatch } from "../infra/best-effort.js";
+
 export const CDP_PORT_RANGE_START = 18800;
 export const CDP_PORT_RANGE_END = 18899;
 
@@ -71,8 +73,8 @@ export function getUsedPorts(
       if (!Number.isNaN(port) && port > 0 && port <= 65535) {
         used.add(port);
       }
-    } catch {
-      // ignore invalid URLs
+    } catch (err) {
+      bestEffortCatch("parse CDP URL for port allocation")(err);
     }
   }
   return used;

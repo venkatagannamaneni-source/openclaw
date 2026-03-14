@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import type { ResolvedBrowserProfile } from "./config.js";
 import { BrowserResetUnsupportedError } from "./errors.js";
 import { stopChromeExtensionRelayServer } from "./extension-relay.js";
@@ -22,8 +23,8 @@ async function closePlaywrightBrowserConnectionForProfile(cdpUrl?: string): Prom
   try {
     const mod = await import("./pw-ai.js");
     await mod.closePlaywrightBrowserConnection(cdpUrl ? { cdpUrl } : undefined);
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("close Playwright browser connection for reset")(err);
   }
 }
 
@@ -37,7 +38,9 @@ export function createProfileResetOps({
   const capabilities = getBrowserProfileCapabilities(profile);
   const resetProfile = async () => {
     if (capabilities.requiresRelay) {
-      await stopChromeExtensionRelayServer({ cdpUrl: profile.cdpUrl }).catch(() => {});
+      await stopChromeExtensionRelayServer({ cdpUrl: profile.cdpUrl }).catch(
+        bestEffortCatch("stop extension relay on reset"),
+      );
       return { moved: false, from: profile.cdpUrl };
     }
     if (!capabilities.supportsReset) {

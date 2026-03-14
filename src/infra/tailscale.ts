@@ -5,6 +5,7 @@ import { danger, info, logVerbose, shouldLogVerbose, warn } from "../globals.js"
 import { runExec } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { ensureBinary } from "./binaries.js";
 
 function parsePossiblyNoisyJsonObject(stdout: string): Record<string, unknown> {
@@ -51,8 +52,8 @@ export async function findTailscaleBinary(): Promise<string | null> {
     if (fromPath && (await checkBinary(fromPath))) {
       return fromPath;
     }
-  } catch {
-    // which failed, continue
+  } catch (err) {
+    bestEffortCatch("which tailscale")(err);
   }
 
   // Strategy 2: Known macOS app path
@@ -80,8 +81,8 @@ export async function findTailscaleBinary(): Promise<string | null> {
     if (found && (await checkBinary(found))) {
       return found;
     }
-  } catch {
-    // find failed, continue
+  } catch (err) {
+    bestEffortCatch("find tailscale binary")(err);
   }
 
   // Strategy 4: locate command
@@ -96,8 +97,8 @@ export async function findTailscaleBinary(): Promise<string | null> {
         return candidate;
       }
     }
-  } catch {
-    // locate failed, continue
+  } catch (err) {
+    bestEffortCatch("locate tailscale binary")(err);
   }
 
   return null;

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { quoteCmdScriptArg } from "../daemon/cmd-argv.js";
 import { resolveGatewayWindowsTaskName } from "../daemon/constants.js";
+import { bestEffortCatch } from "./best-effort.js";
 import type { RestartAttempt } from "./restart.js";
 import { resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
 
@@ -59,8 +60,8 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
   } catch (err) {
     try {
       fs.unlinkSync(scriptPath);
-    } catch {
-      // Best-effort cleanup; keep the original restart failure.
+    } catch (err) {
+      bestEffortCatch("unlink temp restart script")(err);
     }
     return {
       ok: false,

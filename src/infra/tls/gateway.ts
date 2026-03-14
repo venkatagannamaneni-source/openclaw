@@ -6,6 +6,7 @@ import tls from "node:tls";
 import { promisify } from "node:util";
 import type { GatewayTlsConfig } from "../../config/types.gateway.js";
 import { CONFIG_DIR, ensureDir, resolveUserPath, shortenHomeInString } from "../../utils.js";
+import { bestEffortCatch } from "../best-effort.js";
 import { normalizeFingerprint } from "./fingerprint.js";
 
 const execFileAsync = promisify(execFile);
@@ -57,8 +58,8 @@ async function generateSelfSignedCert(params: {
     "-subj",
     "/CN=openclaw-gateway",
   ]);
-  await fs.chmod(params.keyPath, 0o600).catch(() => {});
-  await fs.chmod(params.certPath, 0o600).catch(() => {});
+  await fs.chmod(params.keyPath, 0o600).catch(bestEffortCatch("chmod tls key"));
+  await fs.chmod(params.certPath, 0o600).catch(bestEffortCatch("chmod tls cert"));
   params.log?.info?.(
     `gateway tls: generated self-signed cert at ${shortenHomeInString(params.certPath)}`,
   );

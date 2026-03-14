@@ -1,3 +1,4 @@
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { CDP_JSON_NEW_TIMEOUT_MS } from "./cdp-timeouts.js";
 import { fetchJson, fetchOk, normalizeCdpHttpBaseForJsonEndpoints } from "./cdp.helpers.js";
 import { appendCdpPath, createTargetViaCdp, normalizeCdpWsUrl } from "./cdp.js";
@@ -43,7 +44,8 @@ function normalizeWsUrl(raw: string | undefined, cdpBaseUrl: string): string | u
   }
   try {
     return normalizeCdpWsUrl(raw, cdpBaseUrl);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("normalize CDP WebSocket URL")(err);
     return raw;
   }
 }
@@ -119,16 +121,14 @@ export function createProfileTabOps({
     const candidates = pageTabs.filter((tab) => tab.targetId !== keepTargetId);
     const excessCount = pageTabs.length - MANAGED_BROWSER_PAGE_TAB_LIMIT;
     for (const tab of candidates.slice(0, excessCount)) {
-      void fetchOk(appendCdpPath(cdpHttpBase, `/json/close/${tab.targetId}`)).catch(() => {
-        // best-effort cleanup only
-      });
+      void fetchOk(appendCdpPath(cdpHttpBase, `/json/close/${tab.targetId}`)).catch(
+        bestEffortCatch("close excess browser tab"),
+      );
     }
   };
 
   const triggerManagedTabLimit = (keepTargetId: string): void => {
-    void enforceManagedTabLimit(keepTargetId).catch(() => {
-      // best-effort cleanup only
-    });
+    void enforceManagedTabLimit(keepTargetId).catch(bestEffortCatch("enforce managed tab limit"));
   };
 
   const openTab = async (url: string): Promise<BrowserTab> => {

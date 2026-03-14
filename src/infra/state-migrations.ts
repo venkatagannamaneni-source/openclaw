@@ -22,6 +22,7 @@ import {
   normalizeAgentId,
 } from "../routing/session-key.js";
 import { listTelegramAccountIds } from "../telegram/accounts.js";
+import { bestEffortCatch } from "./best-effort.js";
 import { isWithinDir } from "./path-safety.js";
 import {
   ensureDir,
@@ -352,8 +353,8 @@ function removeDirIfEmpty(dir: string) {
   }
   try {
     fs.rmdirSync(dir);
-  } catch {
-    // ignore
+  } catch (err) {
+    bestEffortCatch("rmdir empty legacy dir")(err);
   }
 }
 
@@ -825,8 +826,8 @@ async function migrateLegacySessions(
       if (fileExists(detected.sessions.legacyStorePath)) {
         fs.rmSync(detected.sessions.legacyStorePath, { force: true });
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("rm legacy session store file")(err);
     }
   }
 
@@ -837,8 +838,8 @@ async function migrateLegacySessions(
     try {
       fs.renameSync(detected.sessions.legacyDir, backupDir);
       warnings.push(`Left legacy sessions at ${backupDir}`);
-    } catch {
-      // ignore
+    } catch (err) {
+      bestEffortCatch("rename legacy sessions dir to backup")(err);
     }
   }
 

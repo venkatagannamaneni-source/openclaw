@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { detectMime } from "../media/mime.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
 import { estimateStructuredEmbeddingInputBytes } from "./embedding-input-limits.js";
@@ -49,8 +50,8 @@ const DISABLED_MULTIMODAL_SETTINGS: MemoryMultimodalSettings = {
 export function ensureDir(dir: string): string {
   try {
     fsSync.mkdirSync(dir, { recursive: true });
-  } catch {
-    // best-effort: directory may already exist or be unwritable
+  } catch (err) {
+    bestEffortCatch("mkdir memory dir")(err);
   }
   return dir;
 }
@@ -134,8 +135,8 @@ export async function listMemoryFiles(
         return;
       }
       result.push(absPath);
-    } catch {
-      // best-effort: file may not exist or be inaccessible
+    } catch (err) {
+      bestEffortCatch("stat memory file")(err);
     }
   };
 
@@ -146,8 +147,8 @@ export async function listMemoryFiles(
     if (!dirStat.isSymbolicLink() && dirStat.isDirectory()) {
       await walkDir(memoryDir, result);
     }
-  } catch {
-    // best-effort: memory directory may not exist
+  } catch (err) {
+    bestEffortCatch("stat memory dir")(err);
   }
 
   const normalizedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
@@ -165,8 +166,8 @@ export async function listMemoryFiles(
         if (stat.isFile() && isAllowedMemoryFilePath(inputPath, multimodal)) {
           result.push(inputPath);
         }
-      } catch {
-        // best-effort: extra path may not exist or be inaccessible
+      } catch (err) {
+        bestEffortCatch("stat extra memory path")(err);
       }
     }
   }
@@ -179,8 +180,8 @@ export async function listMemoryFiles(
     let key = entry;
     try {
       key = await fs.realpath(entry);
-    } catch {
-      // best-effort: use original path if realpath fails
+    } catch (err) {
+      bestEffortCatch("realpath memory file")(err);
     }
     if (seen.has(key)) {
       continue;
@@ -450,7 +451,8 @@ export function parseEmbedding(raw: string): number[] {
   try {
     const parsed = JSON.parse(raw) as number[];
     return Array.isArray(parsed) ? parsed : [];
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse embedding")(err);
     return [];
   }
 }

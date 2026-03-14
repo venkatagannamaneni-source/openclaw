@@ -14,6 +14,7 @@ import {
 import { isPathWithin } from "../commands/cleanup-utils.js";
 import { resolveHomeDir, resolveUserPath } from "../utils.js";
 import { resolveRuntimeServiceVersion } from "../version.js";
+import { bestEffortCatch } from "./best-effort.js";
 
 export type BackupCreateOptions = {
   output?: string;
@@ -103,8 +104,8 @@ async function resolveOutputPath(params: {
     if (stat.isDirectory()) {
       return path.join(resolved, basename);
     }
-  } catch {
-    // Treat as a file path when the target does not exist yet.
+  } catch (err) {
+    bestEffortCatch("stat backup target path")(err);
   }
 
   return resolved;

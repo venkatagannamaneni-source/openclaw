@@ -10,6 +10,7 @@
 import http from "node:http";
 import https from "node:https";
 import { isLoopbackHost } from "../gateway/net.js";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { hasProxyEnvConfigured } from "../infra/net/proxy-env.js";
 
 /** HTTP agent that never uses a proxy — for localhost CDP connections. */
@@ -29,8 +30,8 @@ export function getDirectAgentForCdp(url: string): http.Agent | https.Agent | un
         ? directHttpsAgent
         : directHttpAgent;
     }
-  } catch {
-    // not a valid URL — let caller handle it
+  } catch (err) {
+    bestEffortCatch("parse CDP URL for direct agent")(err);
   }
   return undefined;
 }
@@ -59,7 +60,8 @@ export async function withNoProxyForLocalhost<T>(fn: () => Promise<T>): Promise<
 function isLoopbackCdpUrl(url: string): boolean {
   try {
     return isLoopbackHost(new URL(url).hostname);
-  } catch {
+  } catch (err) {
+    bestEffortCatch("parse loopback CDP URL")(err);
     return false;
   }
 }

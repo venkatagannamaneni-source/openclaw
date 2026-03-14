@@ -1,4 +1,5 @@
 import { devices as playwrightDevices } from "playwright-core";
+import { bestEffortCatch } from "../infra/best-effort.js";
 import { ensurePageState, getPageForTargetId } from "./pw-session.js";
 import { withPageScopedCdpClient } from "./pw-session.page-cdp.js";
 
@@ -57,7 +58,7 @@ export async function setGeolocationViaPlaywright(opts: {
   const context = page.context();
   if (opts.clear) {
     await context.setGeolocation(null);
-    await context.clearPermissions().catch(() => {});
+    await context.clearPermissions().catch(bestEffortCatch("clear browser permissions"));
     return;
   }
   if (typeof opts.latitude !== "number" || typeof opts.longitude !== "number") {
@@ -73,12 +74,15 @@ export async function setGeolocationViaPlaywright(opts: {
     (() => {
       try {
         return new URL(page.url()).origin;
-      } catch {
+      } catch (err) {
+        bestEffortCatch("parse page URL origin")(err);
         return "";
       }
     })();
   if (origin) {
-    await context.grantPermissions(["geolocation"], { origin }).catch(() => {});
+    await context
+      .grantPermissions(["geolocation"], { origin })
+      .catch(bestEffortCatch("grant geolocation permission"));
   }
 }
 

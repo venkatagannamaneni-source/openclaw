@@ -3,6 +3,7 @@ import type { WebSocketServer } from "ws";
 import type { CanvasHostHandler, CanvasHostServer } from "../canvas-host/server.js";
 import { type ChannelId, listChannelPlugins } from "../channels/plugins/index.js";
 import { stopGmailWatcher } from "../hooks/gmail-watcher.js";
+import { bestEffortCatch, bestEffortCatchDebug } from "../infra/best-effort.js";
 import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
 
@@ -42,8 +43,8 @@ export function createGatewayCloseHandler(params: {
     if (params.bonjourStop) {
       try {
         await params.bonjourStop();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatchDebug("stop bonjour")(err);
       }
     }
     if (params.tailscaleCleanup) {
@@ -52,30 +53,30 @@ export function createGatewayCloseHandler(params: {
     if (params.canvasHost) {
       try {
         await params.canvasHost.close();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatchDebug("close canvas host")(err);
       }
     }
     if (params.canvasHostServer) {
       try {
         await params.canvasHostServer.close();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatchDebug("close canvas host server")(err);
       }
     }
     for (const plugin of listChannelPlugins()) {
       await params.stopChannel(plugin.id);
     }
     if (params.pluginServices) {
-      await params.pluginServices.stop().catch(() => {});
+      await params.pluginServices.stop().catch(bestEffortCatchDebug("stop plugin services"));
     }
     await stopGmailWatcher();
     params.cron.stop();
     params.heartbeatRunner.stop();
     try {
       params.updateCheckStop?.();
-    } catch {
-      /* ignore */
+    } catch (err) {
+      bestEffortCatchDebug("stop update check")(err);
     }
     for (const timer of params.nodePresenceTimers.values()) {
       clearInterval(timer);
@@ -94,29 +95,29 @@ export function createGatewayCloseHandler(params: {
     if (params.agentUnsub) {
       try {
         params.agentUnsub();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatchDebug("unsubscribe agent events")(err);
       }
     }
     if (params.heartbeatUnsub) {
       try {
         params.heartbeatUnsub();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatchDebug("unsubscribe heartbeat events")(err);
       }
     }
     params.chatRunState.clear();
     for (const c of params.clients) {
       try {
         c.socket.close(1012, "service restart");
-      } catch {
-        /* ignore */
+      } catch (err) {
+        bestEffortCatch("close client socket")(err);
       }
     }
     params.clients.clear();
-    await params.configReloader.stop().catch(() => {});
+    await params.configReloader.stop().catch(bestEffortCatchDebug("stop config reloader"));
     if (params.browserControl) {
-      await params.browserControl.stop().catch(() => {});
+      await params.browserControl.stop().catch(bestEffortCatchDebug("stop browser control"));
     }
     await new Promise<void>((resolve) => params.wss.close(() => resolve()));
     const servers =

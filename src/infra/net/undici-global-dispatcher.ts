@@ -1,5 +1,6 @@
 import * as net from "node:net";
 import { Agent, EnvHttpProxyAgent, getGlobalDispatcher, setGlobalDispatcher } from "undici";
+import { bestEffortCatch } from "../best-effort.js";
 import { hasEnvHttpProxyConfigured } from "./proxy-env.js";
 
 export const DEFAULT_UNDICI_STREAM_TIMEOUT_MS = 30 * 60 * 1000;
@@ -95,8 +96,8 @@ export function ensureGlobalUndiciEnvProxyDispatcher(): void {
   try {
     setGlobalDispatcher(new EnvHttpProxyAgent());
     lastAppliedProxyBootstrap = true;
-  } catch {
-    // Best-effort bootstrap only.
+  } catch (err) {
+    bestEffortCatch("bootstrap undici env proxy dispatcher")(err);
   }
 }
 
@@ -136,8 +137,8 @@ export function ensureGlobalUndiciStreamTimeouts(opts?: { timeoutMs?: number }):
       );
     }
     lastAppliedTimeoutKey = nextKey;
-  } catch {
-    // Best-effort hardening only.
+  } catch (err) {
+    bestEffortCatch("set undici stream timeouts")(err);
   }
 }
 
