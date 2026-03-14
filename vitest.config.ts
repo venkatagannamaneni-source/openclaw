@@ -107,7 +107,7 @@ export default defineConfig({
       thresholds: {
         lines: 70,
         functions: 70,
-        branches: 55,
+        branches: 60,
         statements: 70,
       },
       // Anchor to repo-root `src/` only. Without this, coverage globs can

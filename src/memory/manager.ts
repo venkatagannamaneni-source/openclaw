@@ -533,7 +533,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       log.warn(`memory sync readonly handle detected; reopening sqlite connection`, { reason });
       try {
         this.db.close();
-      } catch {}
+      } catch {
+        /* best-effort: old connection may already be closed */
+      }
       this.db = this.openDatabase();
       this.vectorReady = null;
       this.vector.available = null;
@@ -592,7 +594,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
               break;
             }
           }
-        } catch {}
+        } catch {
+          /* best-effort: path may not exist or be inaccessible */
+        }
       }
     }
     if (!allowedWorkspace && !allowedAdditional) {
@@ -795,7 +799,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     if (pendingSync) {
       try {
         await pendingSync;
-      } catch {}
+      } catch {
+        /* best-effort: drain pending sync before close */
+      }
     }
     this.db.close();
     INDEX_CACHE.delete(this.cacheKey);

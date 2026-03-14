@@ -1,3 +1,20 @@
+/**
+ * Webhook hooks configuration and resolution.
+ *
+ * ## Trust model for SaaS integration
+ *
+ * When deploying OpenClaw behind an external SaaS product:
+ * - The SaaS layer owns authentication, authorization, and tenant isolation.
+ * - OpenClaw's hook token (`hooks.token`) acts as a shared secret between the
+ *   SaaS backend and the OpenClaw gateway — not as a user-facing auth mechanism.
+ * - Session keys should be namespaced per tenant (e.g. `saas:<tenantId>:<sessionId>`)
+ *   to prevent cross-tenant data leakage in session transcripts.
+ * - Rate limiting at the hook level protects the gateway from runaway tenants;
+ *   per-user rate limiting should be enforced by the SaaS layer.
+ * - The `/hooks/agent` endpoint creates isolated agent runs per request —
+ *   each run gets its own session context and does not share state with others
+ *   unless they share the same session key.
+ */
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";

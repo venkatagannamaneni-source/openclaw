@@ -201,7 +201,9 @@ export function createMattermostConnectOnce(
           });
           try {
             ws.close();
-          } catch {}
+          } catch {
+            /* best-effort: socket may already be closed */
+          }
         });
       });
     } finally {

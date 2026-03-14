@@ -49,7 +49,9 @@ const DISABLED_MULTIMODAL_SETTINGS: MemoryMultimodalSettings = {
 export function ensureDir(dir: string): string {
   try {
     fsSync.mkdirSync(dir, { recursive: true });
-  } catch {}
+  } catch {
+    // best-effort: directory may already exist or be unwritable
+  }
   return dir;
 }
 
@@ -132,7 +134,9 @@ export async function listMemoryFiles(
         return;
       }
       result.push(absPath);
-    } catch {}
+    } catch {
+      // best-effort: file may not exist or be inaccessible
+    }
   };
 
   await addMarkdownFile(memoryFile);
@@ -142,7 +146,9 @@ export async function listMemoryFiles(
     if (!dirStat.isSymbolicLink() && dirStat.isDirectory()) {
       await walkDir(memoryDir, result);
     }
-  } catch {}
+  } catch {
+    // best-effort: memory directory may not exist
+  }
 
   const normalizedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
   if (normalizedExtraPaths.length > 0) {
@@ -159,7 +165,9 @@ export async function listMemoryFiles(
         if (stat.isFile() && isAllowedMemoryFilePath(inputPath, multimodal)) {
           result.push(inputPath);
         }
-      } catch {}
+      } catch {
+        // best-effort: extra path may not exist or be inaccessible
+      }
     }
   }
   if (result.length <= 1) {
@@ -171,7 +179,9 @@ export async function listMemoryFiles(
     let key = entry;
     try {
       key = await fs.realpath(entry);
-    } catch {}
+    } catch {
+      // best-effort: use original path if realpath fails
+    }
     if (seen.has(key)) {
       continue;
     }

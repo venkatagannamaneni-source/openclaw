@@ -1,3 +1,21 @@
+/**
+ * Gateway authentication and authorization.
+ *
+ * ## Trust model
+ *
+ * The gateway supports multiple auth modes:
+ * - **Shared secret**: Bearer token or device-signature challenge-response
+ * - **Tailscale**: Identity via Tailscale whois (zero-config on private networks)
+ * - **Loopback**: Trusted by default for localhost connections
+ *
+ * When deployed behind an external SaaS product, the SaaS layer should:
+ * 1. Authenticate users and resolve tenant context
+ * 2. Forward requests to the gateway with the shared secret token
+ * 3. Include tenant-specific session keys to isolate agent state
+ *
+ * The gateway does not implement user-level auth or multi-tenancy —
+ * it trusts the caller once the shared secret is validated.
+ */
 import type { IncomingMessage } from "node:http";
 import type {
   GatewayAuthConfig,

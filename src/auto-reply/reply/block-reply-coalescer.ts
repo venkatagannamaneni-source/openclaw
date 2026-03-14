@@ -1,3 +1,4 @@
+import { logVerbose } from "../../globals.js";
 import type { ReplyPayload } from "../types.js";
 import type { BlockStreamingCoalescing } from "./block-streaming.js";
 
@@ -13,7 +14,20 @@ export function createBlockReplyCoalescer(params: {
   shouldAbort: () => boolean;
   onFlush: (payload: ReplyPayload) => Promise<void> | void;
 }): BlockReplyCoalescer {
-  const { config, shouldAbort, onFlush } = params;
+  const { config, shouldAbort } = params;
+  // Wrap onFlush to catch errors from fire-and-forget calls
+  const safeOnFlush = (payload: ReplyPayload) => {
+    try {
+      const result = params.onFlush(payload);
+      if (result && typeof result === "object" && "catch" in result) {
+        result.catch((err: unknown) => {
+          logVerbose(`block-reply-coalescer: flush delivery failed: ${String(err)}`);
+        });
+      }
+    } catch (err) {
+      logVerbose(`block-reply-coalescer: flush delivery failed: ${String(err)}`);
+    }
+  };
   const minChars = Math.max(1, Math.floor(config.minChars));
   const maxChars = Math.max(minChars, Math.floor(config.maxChars));
   const idleMs = Math.max(0, Math.floor(config.idleMs));
@@ -45,7 +59,9 @@ export function createBlockReplyCoalescer(params: {
     }
     clearIdleTimer();
     idleTimer = setTimeout(() => {
-      void flush({ force: false });
+      flush({ force: false }).catch((err) => {
+        logVerbose(`block-reply-coalescer: idle flush failed: ${String(err)}`);
+      });
     }, idleMs);
   };
 
@@ -68,7 +84,7 @@ export function createBlockReplyCoalescer(params: {
       audioAsVoice: bufferAudioAsVoice,
     };
     resetBuffer();
-    await onFlush(payload);
+    await params.onFlush(payload);
   };
 
   const enqueue = (payload: ReplyPayload) => {
@@ -79,8 +95,10 @@ export function createBlockReplyCoalescer(params: {
     const text = payload.text ?? "";
     const hasText = text.trim().length > 0;
     if (hasMedia) {
-      void flush({ force: true });
-      void onFlush(payload);
+      flush({ force: true }).catch((err) => {
+        logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+      });
+      safeOnFlush(payload);
       return;
     }
     if (!hasText) {
@@ -91,12 +109,16 @@ export function createBlockReplyCoalescer(params: {
     // as a separate paragraph and flushed immediately so delivery matches streaming boundaries.
     if (flushOnEnqueue) {
       if (bufferText) {
-        void flush({ force: true });
+        flush({ force: true }).catch((err) => {
+          logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+        });
       }
       bufferReplyToId = payload.replyToId;
       bufferAudioAsVoice = payload.audioAsVoice;
       bufferText = text;
-      void flush({ force: true });
+      flush({ force: true }).catch((err) => {
+        logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+      });
       return;
     }
 
@@ -106,7 +128,9 @@ export function createBlockReplyCoalescer(params: {
       (!bufferReplyToId || bufferReplyToId !== payload.replyToId),
     );
     if (bufferText && (replyToConflict || bufferAudioAsVoice !== payload.audioAsVoice)) {
-      void flush({ force: true });
+      flush({ force: true }).catch((err) => {
+        logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+      });
     }
 
     if (!bufferText) {
@@ -117,24 +141,28 @@ export function createBlockReplyCoalescer(params: {
     const nextText = bufferText ? `${bufferText}${joiner}${text}` : text;
     if (nextText.length > maxChars) {
       if (bufferText) {
-        void flush({ force: true });
+        flush({ force: true }).catch((err) => {
+          logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+        });
         bufferReplyToId = payload.replyToId;
         bufferAudioAsVoice = payload.audioAsVoice;
         if (text.length >= maxChars) {
-          void onFlush(payload);
+          safeOnFlush(payload);
           return;
         }
         bufferText = text;
         scheduleIdleFlush();
         return;
       }
-      void onFlush(payload);
+      safeOnFlush(payload);
       return;
     }
 
     bufferText = nextText;
     if (bufferText.length >= maxChars) {
-      void flush({ force: true });
+      flush({ force: true }).catch((err) => {
+        logVerbose(`block-reply-coalescer: forced flush failed: ${String(err)}`);
+      });
       return;
     }
     scheduleIdleFlush();
