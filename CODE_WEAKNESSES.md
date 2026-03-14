@@ -133,33 +133,78 @@ Each channel implementation (Telegram, Discord, Slack, Signal, iMessage, WhatsAp
 
 While the plugin SDK provides some abstraction, the built-in channels each have their own implementations of these patterns, leading to divergent behavior and maintenance burden. For example, `src/telegram/send.ts` (1,524 LOC) and `src/discord/monitor/native-command.ts` (1,849 LOC) both implement complex message sending logic independently.
 
-## 12. Global Mutable State
+## 12. Global Mutable State & Memory Leak Risks
 
-Module-level mutable state patterns exist throughout:
+Module-level mutable state patterns exist throughout, several with **unbounded growth** in a long-running gateway process:
 
-- Logger singletons with mutable configuration (`src/logging/`)
-- Console capture state (`enableConsoleCapture()`)
-- Config loading with frozen-after-init semantics
-- Rate limiting maps in gateway auth
-- Device identity caches
+- `src/auto-reply/reply/queue/state.ts:21` - `FOLLOWUP_QUEUES = new Map()` - global queue state, unscoped
+- `src/discord/components-registry.ts:5-6` - `componentEntries` and `modalEntries` Maps with no size limits
+- `src/discord/monitor/presence-cache.ts:9` - per-account capped at 5,000 but parent Map grows unbounded as accounts are added
+- `src/shared/config-eval.ts:148-150` - `hasBinaryCache = new Map()` - unbounded cache
+- `src/logging/diagnostic-session-state.ts:27` - `diagnosticSessionStates` pruned only on access, not on schedule
+- `src/agents/sandbox/browser-bridges.ts:3` - `BROWSER_BRIDGES` Map with no documented cleanup
 
-While mostly managed carefully, these create implicit coupling and make the code harder to test and reason about in concurrent scenarios.
+The gateway is intended to run 24/7. Unbounded Maps and caches that grow with usage but lack proactive cleanup create slow memory leaks that surface only after days/weeks of operation.
+
+## 13. Fire-and-Forget Promises & Unhandled Rejections
+
+Multiple locations use `void promise.catch(...)` or `.then()` chains that can silently drop errors:
+
+- `src/signal/monitor.ts:109` - `void handle.exited.then((exit) => {...})`
+- `src/signal/monitor.ts:457` - `void handleEvent(event).catch(...)`
+- `src/discord/voice/manager.ts:486` - `void this.handleSpeakingStart(...).catch(...)`
+- `src/gateway/server.impl.ts:765` - `void cron.start().catch(...)`
+- `src/gateway/config-reload.ts:233` - `void watcher.close().catch(() => {})` - ignores close errors entirely
+- `src/auto-reply/reply/session.ts:607,619` - hook runner errors swallowed
+- `src/agents/skills/refresh.ts:151,166` - watcher close failures ignored
+
+These patterns make debugging production issues harder since failures in background operations leave no trace.
+
+## 14. Timer & Resource Leaks
+
+Intervals and timeouts without guaranteed cleanup on error paths:
+
+- `src/discord/monitor/thread-bindings.manager.ts:441` - `setInterval()` sweep timer without guaranteed `clearInterval` on shutdown
+- `src/gateway/server.impl.ts:629` - `nodePresenceTimers` Map tracks intervals, but cleanup timing on error paths is unclear
+- `src/discord/monitor/provider.lifecycle.ts:188,206` - `setTimeout`/`setInterval` without guaranteed cleanup paths
+- `src/discord/monitor/auto-presence.ts:343` - `setIntervalFn()` without clear teardown semantics
+
+In a long-running gateway, leaked timers accumulate and can cause performance degradation or unexpected behavior after extended uptime.
+
+## 15. Import Explosion (Tight Coupling)
+
+Several critical files have an excessive number of relative imports, indicating poor separation of concerns:
+
+- `src/agents/pi-embedded-runner/run/attempt.ts` - **68 relative imports** (the agent runner depends on nearly everything)
+- `src/plugins/runtime/runtime-channel.ts` - **45 relative imports**
+- `src/agents/pi-embedded-runner/compact.ts` - **41 relative imports**
+- `src/commands/agent.ts` - **38 relative imports**
+- `src/gateway/server.impl.ts` - **34 relative imports**
+
+This makes these files extremely difficult to refactor, test in isolation, or reason about. A change to any of the 68 modules imported by `attempt.ts` could have cascading effects on the core execution path.
 
 ## Summary
 
-| Category | Severity | Count/Scope |
-|----------|----------|-------------|
-| Oversized files (>1000 LOC) | Medium | 25+ files |
-| Missing test files | Medium | 60% of source files |
-| Empty catch blocks | Medium | 50+ occurrences |
-| `as any` type casts | Low-Medium | 178 occurrences |
-| Shell execution risks | Medium | 5 locations |
-| Unvalidated JSON.parse | Low-Medium | 508 occurrences |
-| Single-user trust model | Design constraint | Architectural |
-| Config schema complexity | Low | ~200KB schemas |
-| Sandbox defaults off | Medium | Default config |
-| Technical debt markers | Low | 27 TODOs |
-| Channel code duplication | Medium | 6+ built-in channels |
-| Global mutable state | Low | Multiple modules |
+| # | Category | Severity | Count/Scope |
+|---|----------|----------|-------------|
+| 1 | Oversized files (>1000 LOC) | High | 25+ files, worst at 2,392 LOC |
+| 2 | Missing test files | Medium | 60% of source files |
+| 3 | Empty catch blocks | Medium | 50+ occurrences |
+| 4 | `as any` type casts | Low-Medium | 178 occurrences |
+| 5 | Shell execution risks | Medium | 5 locations |
+| 6 | Unvalidated JSON.parse | Low-Medium | 508 occurrences |
+| 7 | Single-user trust model | Design constraint | Architectural |
+| 8 | Config schema complexity | Low | ~200KB, 124 files |
+| 9 | Sandbox defaults off | Medium | Default config |
+| 10 | Technical debt markers | Low | 27 TODOs |
+| 11 | Channel code duplication | Medium | 6+ built-in channels |
+| 12 | Global mutable state / memory leaks | High | 6+ unbounded Maps |
+| 13 | Fire-and-forget promises | Medium | 25+ locations |
+| 14 | Timer / resource leaks | Medium | 4+ unguarded intervals |
+| 15 | Import explosion (tight coupling) | High | 68 imports in critical path |
 
-The codebase has strong security fundamentals (timing-safe comparisons, rate limiting, prompt injection protection, credential redaction) but carries maintainability debt in file sizes, test coverage gaps, and silent error handling patterns.
+The codebase has strong security fundamentals (timing-safe comparisons, rate limiting, prompt injection protection, credential redaction) but carries significant maintainability and reliability debt. The highest-risk areas are:
+
+1. **The agent runner** (`attempt.ts`) - 2,392 LOC with 68 imports, the single most complex and coupled file
+2. **Long-running gateway stability** - unbounded caches, leaked timers, and fire-and-forget promises create slow degradation over days/weeks of uptime
+3. **Test coverage gaps** - 60% of files untested, with wide exclusions from the 70% coverage threshold
