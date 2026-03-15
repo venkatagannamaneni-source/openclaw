@@ -518,6 +518,128 @@ Forking OpenClaw means:
 
 ---
 
+## 10. Deep Dive: Cross-Tenant Data Leak Vectors
+
+This section details the exact code paths where tenant data would leak if multiple tenants shared a single OpenClaw instance. These findings validate why **ephemeral per-tenant containers are mandatory** (not optional).
+
+### LEAK VECTOR 1: Session Transcripts Are Co-mingled
+
+**Path resolution** (`src/config/sessions/paths.ts`):
+```
+~/.openclaw/agents/{agentId}/sessions/{sessionId}.jsonl
+```
+
+There is **no tenant ID in the path**. If Tenant A and Tenant B both use `agentId: "default"`, their session transcripts live in the same directory. The `sessionKey` namespacing (`saas:tenantA:session1`) only affects the filename — not the directory. Any code that calls `listSessionFilesForAgent(agentId)` returns ALL tenants' sessions.
+
+**Files**:
+- `src/config/sessions/paths.ts` — `resolveAgentSessionsDir()` takes only `agentId`
+- `src/memory/session-files.ts` — `listSessionFilesForAgent()` lists ALL `.jsonl` files for an agent
+
+### LEAK VECTOR 2: Memory Embeddings Are Shared Per-Agent
+
+**Memory index** (`src/memory/manager.ts`):
+```typescript
+// Cache key: "{agentId}:{workspaceDir}:{settings}"
+// NO tenant ID in cache key
+```
+
+The `MemoryIndexManager` uses a **single SQLite database per agent**. The schema has tables for `files`, `chunks`, `chunks_vec` (vector embeddings), and `chunks_fts` (full-text search). None of these tables have a `tenantId` column.
+
+If two tenants use the same agent, a `memory_search` call from Tenant A could return Tenant B's indexed content.
+
+**Files**:
+- `src/memory/manager.ts:62-150` — `MemoryIndexManager.get()` cache key has no tenant
+- `src/memory/memory-schema.ts` — SQLite schema with no tenant column
+
+### LEAK VECTOR 3: Sandbox Scope Ignores Tenants
+
+**Sandbox scope hierarchy** (`src/agents/sandbox/types.ts:53`):
+```typescript
+export type SandboxScope = "session" | "agent" | "shared";
+```
+
+There is no `"tenant"` scope option. The `agent` scope shares a single workspace across all sessions for an agent — meaning all tenants on that agent share the same sandbox workspace files. The `session` scope isolates by session key, which partially mitigates this IF session keys are properly namespaced.
+
+**Container naming** uses `sessionKey` and `agentId` only — no tenant isolation in Docker container names, network namespaces, or resource limits.
+
+**Files**:
+- `src/agents/sandbox/context.ts:20-65` — `ensureSandboxWorkspaceLayout()` uses scope + sessionKey
+- `src/agents/sandbox/types.ts:72-85` — `SandboxContext` has no `tenantId` field
+- `src/agents/sandbox/docker.ts` — Container lifecycle has no tenant concept
+
+### LEAK VECTOR 4: Tool Policies Are Agent-Global
+
+**Policy hierarchy** (`src/agents/sandbox-tool-policy.ts`):
+```
+agent-specific policy → global policy → default (allow all)
+```
+
+There is no tenant-level policy layer. If you configure agent "lead-processor" to allow web browsing and WhatsApp, ALL tenants using that agent get both capabilities. You cannot restrict Tenant A to web-only while allowing Tenant B to use WhatsApp on the same agent.
+
+**Files**:
+- `src/agents/sandbox-tool-policy.ts:21-37` — `pickSandboxToolPolicy()` merges agent + global only
+- `src/agents/sandbox/types.ts:6-27` — `SandboxToolPolicySource` is `"agent" | "global" | "default"`
+
+### LEAK VECTOR 5: Agent Runner Has No Tenant Context
+
+**Runner parameters** (`src/agents/pi-embedded-runner/run.ts`):
+```typescript
+// RunEmbeddedPiAgentParams includes:
+//   sessionKey, agentId, runId, workspaceDir
+// NO tenantId parameter
+```
+
+The agent runner resolves execution "lanes" by session key only. Workspace directories are derived from `agentId`, not tenant ID. The retry/failover logic, auth profile selection, and context compaction all operate without tenant awareness.
+
+**Files**:
+- `src/agents/pi-embedded-runner/run.ts` — `runEmbeddedPiAgent()` params
+- `src/agents/pi-embedded-runner/lanes.ts` — `resolveSessionLane()` uses sessionKey only
+
+### Why Ephemeral Containers Solve All 5 Leak Vectors
+
+| Leak Vector | Shared Gateway Risk | Ephemeral Container Fix |
+|-------------|--------------------|-----------------------|
+| Session transcripts | Co-mingled in same directory | Each container has its own `~/.openclaw/` |
+| Memory embeddings | Shared SQLite per agent | Each container gets a fresh, empty database |
+| Sandbox workspace | Shared per agent scope | Each container's filesystem is isolated |
+| Tool policies | Agent-global, no tenant layer | Per-container config with tenant-specific policies |
+| Agent runner | No tenant context in params | Container IS the tenant boundary — no sharing |
+
+The ephemeral container model means you never need to add `tenantId` to OpenClaw's internals. Each container IS a single-tenant instance, perfectly aligned with OpenClaw's existing trust model.
+
+---
+
+## 11. Files Requiring Modification (If Forking)
+
+If you choose to fork OpenClaw for Phase 3 (warm pool reuse, conversation continuity), these are the specific files that would need tenant-awareness:
+
+### High Priority (Core Isolation)
+| File | Change Required |
+|------|----------------|
+| `src/agents/pi-embedded-runner/run.ts` | Add `tenantId` to `RunEmbeddedPiAgentParams` |
+| `src/agents/sandbox/context.ts` | Tenant-scoped workspace resolution |
+| `src/agents/sandbox/types.ts` | Add `"tenant"` to `SandboxScope` |
+| `src/memory/manager.ts` | `tenantId` in cache key and DB queries |
+| `src/memory/memory-schema.ts` | Add `tenant_id` column to SQLite tables |
+| `src/memory/session-files.ts` | Tenant-scoped file path listing |
+| `src/config/sessions/paths.ts` | `tenantId` in directory path |
+
+### Medium Priority (Policy & Containers)
+| File | Change Required |
+|------|----------------|
+| `src/agents/sandbox-tool-policy.ts` | Tenant-level policy merging |
+| `src/agents/sandbox/docker.ts` | Tenant-scoped container naming |
+| `src/agents/sandbox/config.ts` | Tenant-scoped workspace root |
+| `src/gateway/hooks.ts` | Accept `tenantId` in hook payload |
+
+### Low Priority (Observability)
+| File | Change Required |
+|------|----------------|
+| `src/security/audit.ts` | Log `tenantId` in all audit entries |
+| `src/logging/diagnostic-session-state.ts` | Tenant-scoped diagnostic state |
+
+---
+
 ## Appendix: File Reference Index
 
 ### Critical files for VeloKai integration
@@ -530,16 +652,33 @@ Forking OpenClaw means:
 - `src/config/sessions/store.ts` — Session file persistence
 - `src/config/env-vars.ts` — Environment variable handling
 
+### Agent execution & isolation files
+- `src/agents/pi-embedded-runner/run.ts` — Agent runner entry point (no tenantId param)
+- `src/agents/pi-embedded-runner/run/attempt.ts` — Core execution (2,392 LOC, 68 imports)
+- `src/agents/pi-embedded-runner/lanes.ts` — Session lane resolution (sessionKey only)
+- `src/agents/sandbox/context.ts` — Sandbox workspace layout (no tenant scope)
+- `src/agents/sandbox/types.ts` — SandboxScope: "session" | "agent" | "shared" (no "tenant")
+- `src/agents/sandbox/config.ts` — Sandbox configuration resolution
+- `src/agents/sandbox/docker.ts` — Docker container lifecycle
+- `src/agents/sandbox-tool-policy.ts` — Tool policy: agent | global | default (no tenant)
+
+### Memory & session storage files
+- `src/memory/manager.ts` — MemoryIndexManager (cache key: agentId only)
+- `src/memory/memory-schema.ts` — SQLite schema (no tenant_id column)
+- `src/memory/session-files.ts` — Session file listing (all tenants mixed)
+- `src/config/sessions/paths.ts` — Session path: `~/.openclaw/agents/{agentId}/sessions/`
+- `src/config/types.memory.ts` — Memory config types (no tenant scope)
+
 ### Security-relevant files
 - `SECURITY.md` — Trust model documentation
 - `src/security/audit-extra.sync.ts` — Security audit (1,349 LOC)
 - `src/security/audit-extra.async.ts` — Security audit (1,314 LOC)
-- `src/agents/sandbox/` — Sandbox implementation
+- `src/agents/sandbox/sanitize-env-vars.ts` — Env var sanitization (uniform, not per-tenant)
 
 ### Deployment files
-- `Dockerfile` — Main container image
-- `Dockerfile.sandbox` — Sandbox container
-- `Dockerfile.sandbox-browser` — Browser sandbox
-- `docker-compose.yml` — Local compose setup
-- `fly.toml` — Fly.io deployment
-- `render.yaml` — Render.com deployment
+- `Dockerfile` — Main container image (multi-stage, non-root, slim variant)
+- `Dockerfile.sandbox` — Sandbox container (Debian slim, non-root `sandbox` user)
+- `Dockerfile.sandbox-browser` — Browser sandbox (Chromium, X11VNC, NoVNC, ports 9222/5900/6080)
+- `docker-compose.yml` — Local compose (gateway + CLI, no tenant isolation)
+- `fly.toml` — Fly.io deployment (2GB RAM, persistent volume at /data)
+- `render.yaml` — Render.com deployment (1GB disk at /data/.openclaw)
