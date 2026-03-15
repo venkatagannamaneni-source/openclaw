@@ -17,6 +17,9 @@
 7. [Recommended Architecture](#7-recommended-architecture)
 8. [Phased Remediation Plan](#8-phased-remediation-plan)
 9. [Cost & Complexity Estimates](#9-cost--complexity-estimates)
+10. [Cross-Tenant Data Leak Vectors](#10-deep-dive-cross-tenant-data-leak-vectors)
+11. [Files Requiring Modification (If Forking)](#11-files-requiring-modification-if-forking)
+12. [Per-Tenant Dynamic Configuration via Modal](#12-per-tenant-dynamic-configuration-via-modal)
 
 ---
 
@@ -640,6 +643,223 @@ If you choose to fork OpenClaw for Phase 3 (warm pool reuse, conversation contin
 
 ---
 
+## 12. Per-Tenant Dynamic Configuration via Modal
+
+This section details how VeloKai's Agent Builder UI capabilities map to OpenClaw's configuration mechanisms, and how Modal sandboxes enable per-tenant injection.
+
+### Skills (Agent Behavior & Persona)
+
+**How skills work in OpenClaw**: Skills are `SKILL.md` markdown files discovered from filesystem directories at gateway startup and via a filesystem watcher. They are embedded directly into the agent's system prompt at runtime.
+
+**Discovery paths** (`src/agents/skills/refresh.ts:60-77`):
+```
+{workspaceDir}/skills/*/SKILL.md
+{workspaceDir}/.agents/skills/*/SKILL.md
+~/.openclaw/skills/*/SKILL.md
+~/.agents/skills/*/SKILL.md
+{skills.load.extraDirs}/*/SKILL.md
+```
+
+**Per-agent filtering**: `agents.list[].skills` accepts a string array to whitelist which skills an agent can use.
+
+**SKILL.md structure** (example from `skills/coding-agent/SKILL.md`):
+```markdown
+---
+name: coding-agent
+description: 'Delegate coding tasks...'
+metadata:
+  { "openclaw": { "emoji": "🧩", "requires": { "anyBins": ["claude"] } } }
+---
+
+# Coding Agent
+Instructions for behavior...
+```
+
+**Modal injection**:
+```python
+# Write persona as a skill — gets embedded into system prompt
+persona_skill = f"""---
+name: velokai-persona
+description: 'Agent persona and behavioral guidelines. Always active.'
+---
+# Agent Persona
+{tenant_persona}
+## Rules
+- Represent {company_name}
+- {custom_instructions}
+"""
+sb.exec("mkdir", "-p", "/home/node/.openclaw/skills/velokai-persona")
+with sb.open("/home/node/.openclaw/skills/velokai-persona/SKILL.md", "w") as f:
+    f.write(persona_skill)
+```
+
+### System Prompts
+
+**Important**: System prompts are NOT a config field on `AgentConfig` (`agents.list[]`). There is no `agents.list[].systemPrompt` property. System prompts are **built dynamically at runtime** by `buildAgentSystemPrompt()` (`src/agents/system-prompt.ts`) from:
+- Agent identity config (`agents.list[].identity.name`)
+- Discovered skills (SKILL.md files)
+- Workspace context
+- Available tools
+- Memory/recall guidance
+
+**Channel-level systemPrompt exists**: `telegram.direct.systemPrompt`, `telegram.groups.systemPrompt`, `irc.systemPrompt`, etc. — but these are per-channel, not per-agent.
+
+**The `/hooks/agent` payload does NOT accept a systemPrompt field**. Accepted fields:
+```typescript
+{ message, name, agentId, sessionKey, model, thinking,
+  timeoutSeconds, wakeMode, deliver, channel, to }
+```
+
+**Modal injection strategy**: Use skills as the persona mechanism (see above). The skill content becomes part of the system prompt automatically.
+
+### Tool Permissions
+
+**How tools work**: Tool policies are configurable per-agent in `agents.list[]`:
+```json
+{
+  "agents": {
+    "list": [{
+      "id": "lead-engagement",
+      "tools": {
+        "profile": "messaging",
+        "allow": ["web_search", "browser"],
+        "deny": ["file_write"]
+      }
+    }]
+  }
+}
+```
+
+**Source**: `src/agents/sandbox-tool-policy.ts:21-37` — hierarchy is `agent → global → default`.
+
+**Modal injection**: Write the tool policy into `openclaw.json` before starting the gateway.
+
+### MCP Tools
+
+**Important correction**: OpenClaw DOES support MCP tools, but through the **ACPX plugin extension** (`extensions/acpx/`), not core config.
+
+**Config path**: `plugins.entries.acpx.config.mcpServers`
+
+**Schema** (`extensions/acpx/src/config.ts:21-25`):
+```typescript
+type McpServerConfig = {
+  command: string;   // e.g., "npx"
+  args?: string[];   // e.g., ["-y", "mcp-server-sqlite", "--db", "/data/leads.db"]
+  env?: Record<string, string>;
+};
+```
+
+**Key characteristics**:
+- **Only local stdio transport** — MCP servers are spawned as child processes
+- **Global config only** — no per-agent MCP server configuration
+- **On-demand startup** — MCP servers start per ACP session, not at gateway startup
+- **Tool discovery delegated** — the ACP agent (Claude, Codex) discovers tools from MCP servers via standard MCP protocol
+- **Remote bridging possible** — use `npx mcp-remote@latest` to bridge HTTP/SSE MCP servers to local stdio
+
+**Modal injection for MCP tools**:
+```python
+config = {
+    "plugins": {
+        "entries": {
+            "acpx": {
+                "config": {
+                    "mcpServers": {
+                        # VeloKai's own MCP server (for querying tenant's data)
+                        "velokai": {
+                            "command": "npx",
+                            "args": ["-y", "mcp-remote@latest",
+                                     tenant_config["mcp_endpoint"]],
+                            "env": {
+                                "VELOKAI_API_KEY": tenant_config["api_key"]
+                            }
+                        },
+                        # Tenant's custom MCP server (e.g., their database)
+                        "tenant-db": {
+                            "command": "npx",
+                            "args": ["-y", "mcp-server-sqlite",
+                                     "--db", "/data/tenant.db"]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+**Note**: The ACPX plugin must be included in the Docker image build (`--build-arg OPENCLAW_EXTENSIONS="acpx"`).
+
+### Complete Per-Tenant Config Template
+
+This is the full `openclaw.json` that VeloKai writes into each Modal sandbox:
+
+```json
+{
+  "hooks": {
+    "enabled": true,
+    "token": "<generated-per-sandbox>",
+    "allowRequestSessionKey": true,
+    "allowedSessionKeyPrefixes": ["velokai:"]
+  },
+  "agents": {
+    "list": [{
+      "id": "default",
+      "default": true,
+      "identity": { "name": "<tenant_agent_name>" },
+      "skills": ["velokai-persona", "lead-qualifier"],
+      "tools": {
+        "profile": "messaging",
+        "allow": ["<tenant_allowed_tools>"],
+        "deny": ["<tenant_denied_tools>"]
+      }
+    }],
+    "defaults": {
+      "sandbox": { "mode": "all" }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "acpx": {
+        "config": {
+          "mcpServers": {
+            "velokai": {
+              "command": "npx",
+              "args": ["-y", "mcp-remote@latest", "<tenant_mcp_endpoint>"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "skills": {
+    "entries": {
+      "velokai-persona": { "enabled": true },
+      "lead-qualifier": { "enabled": true }
+    }
+  }
+}
+```
+
+### Capability Matrix: VeloKai Agent Builder → OpenClaw Config
+
+| VeloKai Agent Builder Feature | OpenClaw Mechanism | Config Path | Per-Tenant via Modal |
+|-------------------------------|-------------------|-------------|---------------------|
+| Agent persona / instructions | **Skill** (SKILL.md file) | `~/.openclaw/skills/*/SKILL.md` | `sb.open()` to write file |
+| Agent name / identity | Agent config | `agents.list[].identity.name` | Write `openclaw.json` |
+| Web browsing | Built-in tools | `agents.list[].tools.allow: ["web_search", "browser"]` | Write `openclaw.json` |
+| WhatsApp messaging | Built-in channel + hook payload | `channel: "whatsapp"` in POST body | Hook payload field |
+| Telegram messaging | Built-in channel + hook payload | `channel: "telegram"` in POST body | Hook payload field |
+| Slack messaging | Built-in channel + hook payload | `channel: "slack"` in POST body | Hook payload field |
+| File generation | Built-in tools | `agents.list[].tools.allow: ["file_write"]` | Write `openclaw.json` |
+| Database queries (MCP) | ACPX plugin MCP | `plugins.entries.acpx.config.mcpServers` | Write `openclaw.json` |
+| Custom API calls (MCP) | ACPX plugin MCP + mcp-remote | Same as above, with remote bridge | Write `openclaw.json` |
+| AI model selection | Hook payload + config | `model` field in POST body, or agent config | Hook payload field |
+| Thinking mode | Hook payload | `thinking` field in POST body | Hook payload field |
+| Execution timeout | Hook payload | `timeoutSeconds` field in POST body | Hook payload field |
+| API keys (OpenAI, Anthropic) | Environment variables | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | `Sandbox.create(environment_variables=...)` |
+
+---
+
 ## Appendix: File Reference Index
 
 ### Critical files for VeloKai integration
@@ -674,6 +894,17 @@ If you choose to fork OpenClaw for Phase 3 (warm pool reuse, conversation contin
 - `src/security/audit-extra.sync.ts` — Security audit (1,349 LOC)
 - `src/security/audit-extra.async.ts` — Security audit (1,314 LOC)
 - `src/agents/sandbox/sanitize-env-vars.ts` — Env var sanitization (uniform, not per-tenant)
+
+### Skills, system prompts & MCP files
+- `src/agents/skills/refresh.ts:60-77` — Skill discovery paths (filesystem-based)
+- `src/agents/system-prompt.ts` — `buildAgentSystemPrompt()` (runtime assembly, no config field)
+- `src/agents/pi-embedded-runner/system-prompt.ts` — Embedded system prompt builder
+- `src/config/types.skills.ts` — SkillConfig type (enabled, apiKey, env, config)
+- `src/config/types.agents.ts:61-95` — AgentConfig (NO systemPrompt field)
+- `extensions/acpx/src/config.ts:21-25` — McpServerConfig type (command, args, env)
+- `extensions/acpx/src/runtime.ts:675-700` — MCP server startup (per ACP session)
+- `extensions/acpx/src/runtime-internals/mcp-proxy.mjs` — MCP stdio proxy (spawns child processes)
+- `extensions/acpx/src/runtime-internals/mcp-agent-command.ts:109-121` — MCP proxy command builder
 
 ### Deployment files
 - `Dockerfile` — Main container image (multi-stage, non-root, slim variant)
