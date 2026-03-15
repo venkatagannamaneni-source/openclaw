@@ -139,11 +139,27 @@ VeloKai Customer         VeloKai SaaS              OpenClaw (Ephemeral)
 - Different persona/system prompts
 - Different webhook callback URLs
 
-The current `/hooks/agent` endpoint accepts a fixed set of parameters — it does NOT accept per-request config overrides for model keys or tool policies.
+The `/hooks/agent` endpoint accepts a limited set of per-request overrides — `model` and `thinking` mode can be set per request, but NOT model provider API keys or tool policies. The full accepted payload is:
+
+```typescript
+{
+  message: string;           // Required — the webhook data
+  name?: string;             // Sender name (default: "Hook")
+  agentId?: string;          // Route to specific agent profile
+  sessionKey?: string;       // Namespace: "saas:<tenantId>:<sessionId>"
+  model?: string;            // Per-request model override (partial win)
+  thinking?: string;         // Thinking mode override
+  timeoutSeconds?: number;   // Per-request timeout
+  wakeMode?: "now" | "next-heartbeat";
+  deliver?: boolean;         // Whether to deliver to channel
+  channel?: string;          // Channel routing
+  to?: string;               // Recipient
+}
+```
 
 **Resolution**:
-- **Phase 1**: Bake a shared config into the Docker image. VeloKai provides model keys and persona via the hook request body. OpenClaw's hook system already supports `agentId` routing — use different pre-configured agents per capability profile.
-- **Phase 3**: Extend the hooks API to accept per-request config overrides (model key, tool policy, persona). This requires OpenClaw code changes.
+- **Phase 1**: Bake a shared config into the Docker image. VeloKai provides model keys and persona via env vars per container. Use `agentId` to route to pre-configured agent profiles per capability type. The `model` override is already available per-request.
+- **Phase 3**: Extend the hooks API to accept per-request config overrides (model API key, tool policy, persona). This requires OpenClaw code changes.
 
 **File references**:
 - `src/config/io.ts` — Config loading (1,559 LOC)
@@ -154,14 +170,21 @@ The current `/hooks/agent` endpoint accepts a fixed set of parameters — it doe
 
 ### BLOCKER 4: No Async Callback Mechanism
 
-**What**: VeloKai needs "async with callback" — fire a webhook to OpenClaw, get an acknowledgment immediately, then receive results via a callback URL when the agent finishes. OpenClaw's `/hooks/agent` endpoint currently processes synchronously within the HTTP request lifecycle. For multi-step agent tasks (web browsing, messaging, file generation), this means:
+**What**: VeloKai needs "async with callback" — fire a webhook to OpenClaw, get an acknowledgment immediately, then receive results via a callback URL when the agent finishes.
 
-- HTTP connections would need to stay open for minutes
-- Timeout risks with load balancers and reverse proxies
-- No way for VeloKai to track progress or cancel runs
+**Good news**: The `/hooks/agent` endpoint already returns `{ ok: true, runId: string }` — so there IS a run identifier. However, the agent execution happens asynchronously in the background (fire-and-forget style), and there is **no callback URL mechanism** to notify VeloKai when the agent finishes. The only way to get results is:
+1. Poll via WebSocket using `chat.history` with the session key (requires persistent connection)
+2. Configure the agent to deliver results to a channel (Discord/Slack/etc.)
+
+Neither of these works well for machine-to-machine SaaS integration.
+
+**Impact for VeloKai**:
+- No way to know when agent execution completes
+- No way to receive structured results back
+- No way to track progress or cancel runs via HTTP
 
 **Resolution**: Implement a callback mechanism:
-1. OpenClaw receives webhook, returns `202 Accepted` with a `runId`
+1. OpenClaw already returns a `runId` on hook acceptance
 2. Agent executes asynchronously
 3. On completion, OpenClaw POSTs results to a callback URL provided in the original request
 4. VeloKai's `callbackUrl` field in the hook payload drives this
@@ -315,8 +338,15 @@ OpenClaw has several features that align well with VeloKai's needs:
 | Rate limiting | Hook config | Per-hook rate limiting protects against runaway tenants |
 | Health check endpoints | `Dockerfile:228-229` | `/healthz` and `/readyz` for container orchestration |
 | Body size limits | `hooks.ts:30` | 256KB default, configurable |
+| `runId` returned on hook accept | `hooks.ts:456-485` | Already returns `{ ok: true, runId }` — foundation for async tracking |
+| Per-request `model` override | Hook payload schema | Can switch models per webhook without config change |
+| `timeoutSeconds` per request | Hook payload schema | Per-webhook timeout control |
+| Timing-safe token comparison | `server-http.ts:403` | `safeEqualSecret()` prevents timing attacks |
+| Health/readiness probes | `server-http.ts:89-94` | `/healthz` (liveness) + `/readyz` (readiness) |
+| 9-stage request pipeline | `server-http.ts:640-774` | Hooks are first in pipeline — minimal overhead |
+| Failed auth rate limiting | `server-http.ts:75-76` | 20 failed attempts per 60s per scope |
 
-The hooks system was clearly designed with SaaS integration in mind (the trust model comment at the top of `hooks.ts` describes exactly this use case).
+The hooks system was clearly designed with SaaS integration in mind (the trust model comment at the top of `hooks.ts` describes exactly this use case). The gateway also supports Tailscale identity verification, which could be useful for secure container-to-container communication.
 
 ---
 
