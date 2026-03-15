@@ -9,6 +9,7 @@ import { type WebSocket, WebSocketServer } from "ws";
 import { resolveStateDir } from "../config/paths.js";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { isTruthyEnvValue } from "../infra/env.js";
+import { swallowed } from "../logging/swallowed.js";
 import { detectMime } from "../media/mime.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { ensureDir, resolveUserPath } from "../utils.js";
@@ -184,8 +185,8 @@ async function prepareCanvasRoot(rootDir: string) {
   } catch {
     try {
       await fs.writeFile(path.join(rootReal, "index.html"), defaultIndexHTML(), "utf8");
-    } catch {
-      // ignore; we'll still serve the "missing file" message if needed.
+    } catch (err: unknown) {
+      swallowed('ignore; we\'ll still serve the "missing file" message if needed', err);
     }
   }
   return rootReal;
@@ -242,8 +243,8 @@ export async function createCanvasHostHandler(
     for (const ws of sockets) {
       try {
         ws.send("reload");
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     }
   };

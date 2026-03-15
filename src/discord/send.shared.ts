@@ -12,6 +12,7 @@ import { Routes, type APIChannel, type APIEmbed } from "discord-api-types/v10";
 import type { ChunkMode } from "../auto-reply/chunk.js";
 import { loadConfig, type OpenClawConfig } from "../config/config.js";
 import type { RetryRunner } from "../infra/retry-policy.js";
+import { swallowed } from "../logging/swallowed.js";
 import { buildOutboundMediaLoadOptions } from "../media/load-options.js";
 import { normalizePollDurationHours, normalizePollInput, type PollInput } from "../polls.js";
 import { loadWebMedia } from "../web/media.js";
@@ -207,8 +208,8 @@ async function buildDiscordSendError(
       required.push("AttachFiles");
     }
     missing = required.filter((permission) => !current.has(permission));
-  } catch {
-    /* ignore permission probe errors */
+  } catch (err: unknown) {
+    swallowed("ignore permission probe errors", err);
   }
 
   const missingLabel = missing.length

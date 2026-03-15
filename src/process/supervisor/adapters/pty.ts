@@ -1,3 +1,4 @@
+import { swallowed } from "../../../logging/swallowed.js";
 import { killProcessTree } from "../../kill-tree.js";
 import type { ManagedRunStdin, SpawnProcessAdapter } from "../types.js";
 import { toStringEnv } from "./env.js";
@@ -117,8 +118,8 @@ export async function createPtyAdapter(params: {
       try {
         const eof = process.platform === "win32" ? "\x1a" : "\x04";
         pty.write(eof);
-      } catch {
-        // ignore EOF errors
+      } catch (err: unknown) {
+        swallowed("ignore EOF errors", err);
       }
     },
   };
@@ -162,8 +163,8 @@ export async function createPtyAdapter(params: {
       } else {
         pty.kill(signal);
       }
-    } catch {
-      // ignore kill errors
+    } catch (err: unknown) {
+      swallowed("ignore kill errors", err);
     }
 
     if (signal === "SIGKILL") {
@@ -174,13 +175,13 @@ export async function createPtyAdapter(params: {
   const dispose = () => {
     try {
       dataListener?.dispose();
-    } catch {
-      // ignore disposal errors
+    } catch (err: unknown) {
+      swallowed("ignore disposal errors", err);
     }
     try {
       exitListener?.dispose();
-    } catch {
-      // ignore disposal errors
+    } catch (err: unknown) {
+      swallowed("ignore disposal errors", err);
     }
     clearForceKillWaitFallback();
     dataListener = null;

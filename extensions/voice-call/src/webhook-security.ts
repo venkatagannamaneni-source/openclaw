@@ -339,8 +339,8 @@ export function reconstructWebhookUrl(ctx: WebhookContext, options?: WebhookUrlO
   try {
     const parsed = new URL(ctx.url);
     path = parsed.pathname + parsed.search;
-  } catch {
-    // URL parsing failed
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "URL parsing failed", err);
   }
 
   return `${proto}://${host}${path}`;
@@ -656,8 +656,12 @@ export function verifyTwilioWebhook(
       if (publicPort) {
         variants.add(setPortOnUrl(verificationUrl, publicPort));
       }
-    } catch {
-      // ignore invalid publicUrl; primary verification already used best effort
+    } catch (err: unknown) {
+      console.debug(
+        "[swallowed]",
+        "ignore invalid publicUrl; primary verification already used best effort",
+        err,
+      );
     }
   }
 

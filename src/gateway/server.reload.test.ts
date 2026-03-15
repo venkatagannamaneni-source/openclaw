@@ -819,7 +819,9 @@ process.stdin.on("end", () => {
     if (Array.isArray(parsed.ids) && parsed.ids.length > 0) {
       ids = parsed.ids.map((entry) => String(entry));
     }
-  } catch {}
+  } catch {
+    // best-effort JSON parse
+  }
 
   if (mode === "fail") {
     const errors = {};

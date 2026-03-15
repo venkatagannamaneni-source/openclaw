@@ -210,8 +210,8 @@ const tlonOutbound: ChannelOutboundAdapter = {
     } finally {
       try {
         await api.delete();
-      } catch {
-        // ignore cleanup errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "ignore cleanup errors", err);
       }
     }
   },
@@ -267,8 +267,8 @@ const tlonOutbound: ChannelOutboundAdapter = {
     } finally {
       try {
         await api.delete();
-      } catch {
-        // ignore cleanup errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "ignore cleanup errors", err);
       }
     }
   },

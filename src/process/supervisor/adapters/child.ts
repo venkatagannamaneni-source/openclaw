@@ -1,4 +1,5 @@
 import type { ChildProcessWithoutNullStreams, SpawnOptions } from "node:child_process";
+import { swallowed } from "../../../logging/swallowed.js";
 import { killProcessTree } from "../../kill-tree.js";
 import { spawnWithFallback } from "../../spawn-utils.js";
 import { resolveWindowsCommandShim } from "../../windows-command.js";
@@ -86,15 +87,15 @@ export async function createChildAdapter(params: {
         end: () => {
           try {
             child.stdin.end();
-          } catch {
-            // ignore close errors
+          } catch (err: unknown) {
+            swallowed("ignore close errors", err);
           }
         },
         destroy: () => {
           try {
             child.stdin.destroy();
-          } catch {
-            // ignore destroy errors
+          } catch (err: unknown) {
+            swallowed("ignore destroy errors", err);
           }
         },
       }
@@ -128,16 +129,16 @@ export async function createChildAdapter(params: {
       } else {
         try {
           child.kill("SIGKILL");
-        } catch {
-          // ignore kill errors
+        } catch (err: unknown) {
+          swallowed("ignore kill errors", err);
         }
       }
       return;
     }
     try {
       child.kill(signal);
-    } catch {
-      // ignore kill errors for non-kill signals
+    } catch (err: unknown) {
+      swallowed("ignore kill errors for non-kill signals", err);
     }
   };
 

@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bestEffortCatch } from "../infra/best-effort.js";
+import { swallowed } from "../logging/swallowed.js";
 import { detectMime } from "../media/mime.js";
 import { resolveFileWithinRoot } from "./file-resolver.js";
 
@@ -52,8 +53,8 @@ async function resolveA2uiRoot(): Promise<string | null> {
       await fs.stat(indexPath);
       await fs.stat(bundlePath);
       return dir;
-    } catch {
-      // try next
+    } catch (err: unknown) {
+      swallowed("try next", err);
     }
   }
   return null;
@@ -104,7 +105,9 @@ export function injectCanvasLiveReload(html: string): string {
           return true;
         }
       }
-    } catch { /* best-effort: native bridge may not be available */ }
+    } catch {
+      /* best-effort: native bridge may not be available */
+    }
     return false;
   }
   function sendUserAction(userAction) {
@@ -128,7 +131,9 @@ export function injectCanvasLiveReload(html: string): string {
     ws.onmessage = (ev) => {
       if (String(ev.data || "") === "reload") location.reload();
     };
-  } catch { /* best-effort: WebSocket live-reload is optional */ }
+  } catch {
+    /* best-effort: WebSocket live-reload is optional */
+  }
 })();
 </script>
 `.trim();

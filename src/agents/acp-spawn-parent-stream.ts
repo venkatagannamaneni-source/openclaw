@@ -5,6 +5,7 @@ import { resolveSessionFilePath, resolveSessionFilePathOptions } from "../config
 import { onAgentEvent } from "../infra/agent-events.js";
 import { requestHeartbeatNow } from "../infra/heartbeat-wake.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
+import { swallowed } from "../logging/swallowed.js";
 import { scopedHeartbeatWakeOptions } from "../routing/session-key.js";
 
 const DEFAULT_STREAM_FLUSH_MS = 2_500;
@@ -162,8 +163,8 @@ export function startAcpSpawnParentStreamRelay(params: {
         return;
       }
       scheduleLogFlush();
-    } catch {
-      // Best-effort diagnostics; never break relay flow.
+    } catch (err: unknown) {
+      swallowed("Best-effort diagnostics; never break relay flow", err);
     }
   };
   const logEvent = (kind: string, fields?: Record<string, unknown>) => {

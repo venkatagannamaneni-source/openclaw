@@ -143,8 +143,8 @@ async function fetchWithAuthFallback(params: {
         // Preserve scope fallback semantics for non-auth failures.
         continue;
       }
-    } catch {
-      // Try the next scope.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Try the next scope", err);
     }
   }
 
@@ -227,8 +227,8 @@ export async function downloadMSTeamsAttachments(params: {
         contentType: saved.contentType,
         placeholder: inline.placeholder,
       });
-    } catch {
-      // Ignore decode failures and continue.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore decode failures and continue", err);
     }
   }
   for (const candidate of candidates) {
@@ -254,8 +254,12 @@ export async function downloadMSTeamsAttachments(params: {
           }),
       });
       out.push(media);
-    } catch {
-      // Ignore download failures and continue with next candidate.
+    } catch (err: unknown) {
+      console.debug(
+        "[swallowed]",
+        "Ignore download failures and continue with next candidate",
+        err,
+      );
     }
   }
   return out;

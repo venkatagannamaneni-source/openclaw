@@ -10,6 +10,7 @@ import { bestEffortCatch } from "../infra/best-effort.js";
 import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getMemorySearchManager } from "../memory/index.js";
 import type { MemoryProviderStatus } from "../memory/types.js";
 import { runExec } from "../process/exec.js";
@@ -174,8 +175,8 @@ async function resolveMemoryStatusSnapshot(params: {
   }
   try {
     await manager.probeVectorAvailability();
-  } catch {
-    /* best-effort: vector probe is optional for status */
+  } catch (err: unknown) {
+    swallowed("best-effort: vector probe is optional for status", err);
   }
   const status = manager.status();
   await manager.close?.().catch(bestEffortCatch("close memory search manager after status scan"));

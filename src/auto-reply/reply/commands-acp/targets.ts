@@ -1,4 +1,5 @@
 import { callGateway } from "../../../gateway/call.js";
+import { swallowed } from "../../../logging/swallowed.js";
 import { resolveEffectiveResetTargetSessionKey } from "../acp-reset-target.js";
 import { resolveRequesterSessionKey } from "../commands-subagents/shared.js";
 import type { HandleCommandsParams } from "../commands-types.js";
@@ -27,8 +28,8 @@ async function resolveSessionKeyByToken(token: string): Promise<string | null> {
       if (key) {
         return key;
       }
-    } catch {
-      // Try next resolver strategy.
+    } catch (err: unknown) {
+      swallowed("Try next resolver strategy", err);
     }
   }
   return null;

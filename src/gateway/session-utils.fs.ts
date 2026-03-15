@@ -12,6 +12,7 @@ import {
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { jsonUtf8Bytes } from "../infra/json-utf8-bytes.js";
+import { swallowed } from "../logging/swallowed.js";
 import { hasInterSessionUserProvenance } from "../sessions/input-provenance.js";
 import { stripInlineDirectiveTagsForDisplay } from "../utils/directive-tags.js";
 import { extractToolCallNames, hasToolCall } from "../utils/transcript-tools.js";
@@ -112,8 +113,8 @@ export function readSessionMessages(
           },
         });
       }
-    } catch {
-      // ignore bad lines
+    } catch (err: unknown) {
+      swallowed("ignore bad lines", err);
     }
   }
   return messages;
@@ -129,8 +130,8 @@ export function resolveSessionTranscriptCandidates(
   const pushCandidate = (resolve: () => string): void => {
     try {
       candidates.push(resolve());
-    } catch {
-      // Ignore invalid paths/IDs and keep scanning other safe candidates.
+    } catch (err: unknown) {
+      swallowed("Ignore invalid paths/IDs and keep scanning other safe candidates", err);
     }
   };
 
@@ -337,16 +338,16 @@ export function readSessionTitleFieldsFromTranscript(
       if (chunk) {
         firstUserMessage = extractFirstUserMessageFromTranscriptChunk(chunk, opts);
       }
-    } catch {
-      // ignore head read errors
+    } catch (err: unknown) {
+      swallowed("ignore head read errors", err);
     }
 
     // Tail (last message preview)
     let lastMessagePreview: string | null = null;
     try {
       lastMessagePreview = readLastMessagePreviewFromOpenTranscript({ fd, size });
-    } catch {
-      // ignore tail read errors
+    } catch (err: unknown) {
+      swallowed("ignore tail read errors", err);
     }
 
     const result = { firstUserMessage, lastMessagePreview };
@@ -418,8 +419,8 @@ function extractFirstUserMessageFromTranscriptChunk(
       if (text) {
         return text;
       }
-    } catch {
-      // skip malformed lines
+    } catch (err: unknown) {
+      swallowed("skip malformed lines", err);
     }
   }
   return null;
@@ -440,8 +441,8 @@ function withOpenTranscriptFd<T>(filePath: string, read: (fd: number) => T | nul
   try {
     fd = fs.openSync(filePath, "r");
     return read(fd);
-  } catch {
-    // file read error
+  } catch (err: unknown) {
+    swallowed("file read error", err);
   } finally {
     if (fd !== null) {
       fs.closeSync(fd);
@@ -499,8 +500,8 @@ function readLastMessagePreviewFromOpenTranscript(params: {
       if (text) {
         return text;
       }
-    } catch {
-      // skip malformed
+    } catch (err: unknown) {
+      swallowed("skip malformed", err);
     }
   }
   return null;
@@ -695,8 +696,8 @@ function readRecentMessagesFromTranscript(
             break;
           }
         }
-      } catch {
-        // skip malformed lines
+      } catch (err: unknown) {
+        swallowed("skip malformed lines", err);
       }
     }
     return collected.toReversed();

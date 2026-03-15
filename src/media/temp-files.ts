@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { swallowed } from "../logging/swallowed.js";
 
 export async function unlinkIfExists(filePath: string | null | undefined): Promise<void> {
   if (!filePath) {
@@ -6,7 +7,7 @@ export async function unlinkIfExists(filePath: string | null | undefined): Promi
   }
   try {
     await fs.unlink(filePath);
-  } catch {
-    // Best-effort cleanup for temp files.
+  } catch (err: unknown) {
+    swallowed("Best-effort cleanup for temp files", err);
   }
 }

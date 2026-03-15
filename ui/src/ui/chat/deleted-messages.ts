@@ -38,8 +38,8 @@ export class DeletedMessages {
       if (Array.isArray(arr)) {
         this._keys = new Set(arr.filter((s) => typeof s === "string"));
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
   }
 

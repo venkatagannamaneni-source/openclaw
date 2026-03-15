@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { OpenClawConfig } from "../config/config.js";
+import { swallowed } from "../logging/swallowed.js";
 import { resolveAgentWorkspaceDir } from "./agent-scope.js";
 
 export function decodeStrictBase64(value: string, maxDecodedBytes: number): Buffer | null {
@@ -234,8 +235,8 @@ export async function materializeSubagentAttachments(params: {
   } catch (err) {
     try {
       await fs.rm(absDir, { recursive: true, force: true });
-    } catch {
-      // Best-effort cleanup only.
+    } catch (err: unknown) {
+      swallowed("Best-effort cleanup only", err);
     }
     return {
       status: "error",

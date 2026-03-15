@@ -1,5 +1,6 @@
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { callGateway } from "../../gateway/call.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { SessionListRow } from "./sessions-helpers.js";
 import type { AnnounceTarget } from "./sessions-send-helpers.js";
 import { resolveAnnounceTargetFromKey } from "./sessions-send-helpers.js";
@@ -50,8 +51,8 @@ export async function resolveAnnounceTarget(params: {
     if (channel && to) {
       return { channel, to, accountId };
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 
   return fallback;

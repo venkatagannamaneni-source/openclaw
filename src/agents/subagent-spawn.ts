@@ -4,6 +4,7 @@ import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinkin
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
 import { callGateway } from "../gateway/call.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import {
   isValidAgentId,
@@ -148,8 +149,8 @@ async function cleanupProvisionalSession(
       },
       timeoutMs: 10_000,
     });
-  } catch {
-    // Best-effort cleanup only.
+  } catch (err: unknown) {
+    swallowed("Best-effort cleanup only", err);
   }
 }
 
@@ -162,8 +163,8 @@ async function cleanupFailedSpawnBeforeAgentStart(params: {
   if (params.attachmentAbsDir) {
     try {
       await fs.rm(params.attachmentAbsDir, { recursive: true, force: true });
-    } catch {
-      // Best-effort cleanup only.
+    } catch (err: unknown) {
+      swallowed("Best-effort cleanup only", err);
     }
   }
   await cleanupProvisionalSession(params.childSessionKey, {
@@ -496,8 +497,8 @@ export async function spawnSubagentDirect(
           params: { key: childSessionKey, emitLifecycleHooks: false },
           timeoutMs: 10_000,
         });
-      } catch {
-        // Best-effort cleanup only.
+      } catch (err: unknown) {
+        swallowed("Best-effort cleanup only", err);
       }
       return {
         status: "error",
@@ -633,8 +634,8 @@ export async function spawnSubagentDirect(
     if (attachmentAbsDir) {
       try {
         await fs.rm(attachmentAbsDir, { recursive: true, force: true });
-      } catch {
-        // Best-effort cleanup only.
+      } catch (err: unknown) {
+        swallowed("Best-effort cleanup only", err);
       }
     }
     if (threadBindingReady) {
@@ -660,8 +661,11 @@ export async function spawnSubagentDirect(
             },
           );
           endedHookEmitted = true;
-        } catch {
-          // Spawn should still return an actionable error even if cleanup hooks fail.
+        } catch (err: unknown) {
+          swallowed(
+            "Spawn should still return an actionable error even if cleanup hooks fail",
+            err,
+          );
         }
       }
       // Always delete the provisional child session after a failed spawn attempt.
@@ -676,8 +680,8 @@ export async function spawnSubagentDirect(
           },
           timeoutMs: 10_000,
         });
-      } catch {
-        // Best-effort only.
+      } catch (err: unknown) {
+        swallowed("Best-effort only", err);
       }
     }
     const messageText = summarizeError(err);
@@ -713,8 +717,8 @@ export async function spawnSubagentDirect(
     if (attachmentAbsDir) {
       try {
         await fs.rm(attachmentAbsDir, { recursive: true, force: true });
-      } catch {
-        // Best-effort cleanup only.
+      } catch (err: unknown) {
+        swallowed("Best-effort cleanup only", err);
       }
     }
     try {
@@ -723,8 +727,8 @@ export async function spawnSubagentDirect(
         params: { key: childSessionKey, deleteTranscript: true, emitLifecycleHooks: false },
         timeoutMs: 10_000,
       });
-    } catch {
-      // Best-effort cleanup only.
+    } catch (err: unknown) {
+      swallowed("Best-effort cleanup only", err);
     }
     return {
       status: "error",
@@ -757,8 +761,8 @@ export async function spawnSubagentDirect(
           requesterSessionKey: requesterInternalKey,
         },
       );
-    } catch {
-      // Spawn should still return accepted if spawn lifecycle hooks fail.
+    } catch (err: unknown) {
+      swallowed("Spawn should still return accepted if spawn lifecycle hooks fail", err);
     }
   }
 

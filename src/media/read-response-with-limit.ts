@@ -1,3 +1,5 @@
+import { swallowed } from "../logging/swallowed.js";
+
 async function readChunkWithIdleTimeout(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   chunkTimeoutMs: number,
@@ -76,8 +78,8 @@ export async function readResponseWithLimit(
         if (total > maxBytes) {
           try {
             await reader.cancel();
-          } catch {
-            /* best-effort: reader may already be closed */
+          } catch (err: unknown) {
+            swallowed("best-effort: reader may already be closed", err);
           }
           throw onOverflow({ size: total, maxBytes, res });
         }
@@ -87,8 +89,8 @@ export async function readResponseWithLimit(
   } finally {
     try {
       reader.releaseLock();
-    } catch {
-      /* best-effort: lock may already be released */
+    } catch (err: unknown) {
+      swallowed("best-effort: lock may already be released", err);
     }
   }
 

@@ -1,6 +1,7 @@
 import type { SlackActionMiddlewareArgs } from "@slack/bolt";
 import type { Block, KnownBlock } from "@slack/web-api";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
+import { swallowed } from "../../../logging/swallowed.js";
 import { authorizeSlackSystemEventSender } from "../auth.js";
 import type { SlackMonitorContext } from "../context.js";
 import { escapeSlackMrkdwn } from "../mrkdwn.js";
@@ -521,8 +522,8 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
               text: "You are not authorized to use this control.",
               response_type: "ephemeral",
             });
-          } catch {
-            // Best-effort feedback only.
+          } catch (err: unknown) {
+            swallowed("Best-effort feedback only", err);
           }
         }
         return;
@@ -630,8 +631,11 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
             text: `Button "${actionId}" clicked!`,
             response_type: "ephemeral",
           });
-        } catch {
-          // Action was acknowledged and system event enqueued even when response updates fail.
+        } catch (err: unknown) {
+          swallowed(
+            "Action was acknowledged and system event enqueued even when response updates fail",
+            err,
+          );
         }
       }
     },

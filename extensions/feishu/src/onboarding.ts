@@ -197,8 +197,8 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
     if (configured && resolvedCredentials) {
       try {
         probeResult = await probeFeishu(resolvedCredentials);
-      } catch {
-        // Ignore probe errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Ignore probe errors", err);
       }
     }
 

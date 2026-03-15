@@ -66,8 +66,8 @@ function readBundledChannelCatalogIds(): string[] {
         order: typeof orderRaw === "number" ? orderRaw : 999,
         label: typeof labelRaw === "string" ? labelRaw : id.trim(),
       });
-    } catch {
-      // Ignore malformed or missing extension package manifests.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore malformed or missing extension package manifests", err);
     }
   }
   return entries

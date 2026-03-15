@@ -17,6 +17,7 @@ import {
   normalizeOutboundPayloadsForJson,
 } from "../../infra/outbound/payloads.js";
 import type { OutboundSessionContext } from "../../infra/outbound/session-context.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { AgentCommandOpts } from "./types.js";
@@ -100,8 +101,8 @@ export async function deliverAgentCommandResult(params: {
     try {
       const selection = await resolveMessageChannelSelection({ cfg });
       deliveryChannel = selection.channel;
-    } catch {
-      // Keep the internal channel marker; error handling below reports the failure.
+    } catch (err: unknown) {
+      swallowed("Keep the internal channel marker; error handling below reports the failure", err);
     }
   }
   const effectiveDeliveryPlan =

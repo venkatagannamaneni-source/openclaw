@@ -148,8 +148,8 @@ export async function loginQwenPortalOAuth(params: {
 
   try {
     await params.openUrl(verificationUrl);
-  } catch {
-    // Fall back to manual copy/paste if browser open fails.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Fall back to manual copy/paste if browser open fails", err);
   }
 
   const start = Date.now();

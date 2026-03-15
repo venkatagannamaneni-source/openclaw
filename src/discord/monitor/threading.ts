@@ -3,6 +3,7 @@ import { Routes } from "discord-api-types/v10";
 import { createReplyReferencePlanner } from "../../auto-reply/reply/reply-reference.js";
 import type { ReplyToMode } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { buildAgentSessionKey } from "../../routing/resolve-route.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import type { DiscordChannelConfigResolved } from "./allow-list.js";
@@ -431,8 +432,8 @@ export async function maybeCreateDiscordAutoThread(params: {
         );
         return existingThreadId;
       }
-    } catch {
-      // If the refetch also fails, fall through to return undefined.
+    } catch (err: unknown) {
+      swallowed("If the refetch also fails, fall through to return undefined", err);
     }
     return undefined;
   }

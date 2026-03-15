@@ -11,6 +11,7 @@ import type { SessionEntry } from "../config/sessions.js";
 import { loadSessionStore, resolveStorePath, updateSessionStore } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
 import { logVerbose } from "../globals.js";
+import { swallowed } from "../logging/swallowed.js";
 import {
   isSubagentSessionKey,
   parseAgentSessionKey,
@@ -630,8 +631,8 @@ export async function steerControlledSubagentRun(params: {
       },
       timeoutMs: STEER_ABORT_SETTLE_TIMEOUT_MS + 2_000,
     });
-  } catch {
-    // Continue even if wait fails; steer should still be attempted.
+  } catch (err: unknown) {
+    swallowed("Continue even if wait fails; steer should still be attempted", err);
   }
 
   const idempotencyKey = crypto.randomUUID();

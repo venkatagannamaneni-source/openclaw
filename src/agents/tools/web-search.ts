@@ -3,6 +3,7 @@ import { formatCliCommand } from "../../cli/command-format.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { normalizeResolvedSecretInputString } from "../../config/types.secrets.js";
 import { logVerbose } from "../../globals.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { RuntimeWebSearchMetadata } from "../../secrets/runtime-web-tools.js";
 import { wrapWebContent } from "../../security/external-content.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
@@ -1391,8 +1392,8 @@ function extractKimiCitations(data: KimiSearchResponse): string[] {
           citations.push(result.url.trim());
         }
       }
-    } catch {
-      // ignore malformed tool arguments
+    } catch (err: unknown) {
+      swallowed("ignore malformed tool arguments", err);
     }
   }
 

@@ -5,6 +5,7 @@ import { loadConfig } from "../config/config.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { computeBackoff, type BackoffPolicy } from "../infra/backoff.js";
 import { consumeRootOptionToken, FLAG_TERMINATOR } from "../infra/cli-root-options.js";
+import { swallowed } from "../logging/swallowed.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
 
@@ -147,8 +148,8 @@ function ensureContextWindowCacheLoaded(): Promise<void> {
   loadPromise = (async () => {
     try {
       await ensureOpenClawModelsJson(cfg);
-    } catch {
-      // Continue with best-effort discovery/overrides.
+    } catch (err: unknown) {
+      swallowed("Continue with best-effort discovery/overrides", err);
     }
 
     try {
@@ -164,8 +165,8 @@ function ensureContextWindowCacheLoaded(): Promise<void> {
         cache: MODEL_CACHE,
         models,
       });
-    } catch {
-      // If model discovery fails, continue with config overrides only.
+    } catch (err: unknown) {
+      swallowed("If model discovery fails, continue with config overrides only", err);
     }
 
     applyConfiguredContextWindows({

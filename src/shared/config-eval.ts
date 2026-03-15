@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 
 export function isTruthy(value: unknown): boolean {
   if (value === undefined || value === null) {
@@ -170,8 +171,8 @@ export function hasBinary(bin: string): boolean {
         fs.accessSync(candidate, fs.constants.X_OK);
         hasBinaryCache.set(bin, true);
         return true;
-      } catch {
-        // keep scanning
+      } catch (err: unknown) {
+        swallowed("keep scanning", err);
       }
     }
   }

@@ -10,6 +10,7 @@ import { normalizeProviderId } from "../agents/model-selection.js";
 import { resolveStateDir, type OpenClawConfig } from "../config/config.js";
 import type { ConfigWriteOptions } from "../config/io.js";
 import type { SecretProviderConfig } from "../config/types.secrets.js";
+import { swallowed } from "../logging/swallowed.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveConfigDir, resolveUserPath } from "../utils.js";
 import { iterateAuthProfileCredentials } from "./auth-profiles-scan.js";
@@ -760,8 +761,8 @@ export async function runSecretsApply(params: {
     for (const [pathname, snapshot] of snapshots.entries()) {
       try {
         restoreFileSnapshot(pathname, snapshot);
-      } catch {
-        // Best effort only; preserve original error.
+      } catch (err: unknown) {
+        swallowed("Best effort only; preserve original error", err);
       }
     }
     throw new Error(`Secrets apply failed: ${String(err)}`, { cause: err });

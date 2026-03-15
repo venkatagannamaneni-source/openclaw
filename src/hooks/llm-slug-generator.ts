@@ -16,6 +16,7 @@ import { parseModelRef } from "../agents/model-selection.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 
 const log = createSubsystemLogger("llm-slug-generator");
 
@@ -92,8 +93,8 @@ Reply with ONLY the slug, nothing else. Examples: "vendor-pitch", "api-design", 
     if (tempSessionFile) {
       try {
         await fs.rm(path.dirname(tempSessionFile), { recursive: true, force: true });
-      } catch {
-        // Ignore cleanup errors
+      } catch (err: unknown) {
+        swallowed("Ignore cleanup errors", err);
       }
     }
   }

@@ -169,8 +169,12 @@ export function registerSlashCommandRoute(api: OpenClawPluginApi) {
         if (urlPath && urlPath !== resolved.callbackPath) {
           callbackPaths.add(urlPath);
         }
-      } catch {
-        // Invalid URL — ignore, will be caught during registration
+      } catch (err: unknown) {
+        console.debug(
+          "[swallowed]",
+          "Invalid URL — ignore, will be caught during registration",
+          err,
+        );
       }
     }
   };
@@ -249,8 +253,8 @@ export function registerSlashCommandRoute(api: OpenClawPluginApi) {
       } else {
         token = new URLSearchParams(bodyStr).get("token");
       }
-    } catch {
-      // parse failed — will be caught by handler
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "parse failed — will be caught by handler", err);
     }
 
     const match = token ? resolveSlashHandlerForToken(token) : { kind: "none" as const };

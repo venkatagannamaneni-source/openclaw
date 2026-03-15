@@ -44,29 +44,29 @@ export async function getMatrixRoomInfo(roomId: string, opts: MatrixActionClient
     try {
       const nameState = await client.getRoomStateEvent(resolvedRoom, "m.room.name", "");
       name = nameState?.name ?? null;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
 
     try {
       const topicState = await client.getRoomStateEvent(resolvedRoom, EventType.RoomTopic, "");
       topic = topicState?.topic ?? null;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
 
     try {
       const aliasState = await client.getRoomStateEvent(resolvedRoom, "m.room.canonical_alias", "");
       canonicalAlias = aliasState?.alias ?? null;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
 
     try {
       const members = await client.getJoinedRoomMembers(resolvedRoom);
       memberCount = members.length;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
 
     return {

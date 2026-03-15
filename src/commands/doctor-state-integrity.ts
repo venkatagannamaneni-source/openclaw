@@ -16,6 +16,7 @@ import {
   resolveStorePath,
 } from "../config/sessions.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
@@ -760,8 +761,8 @@ export async function noteStateIntegrity(
         referencedTranscriptPaths.add(
           path.resolve(resolveSessionFilePath(entry.sessionId, entry, sessionPathOpts)),
         );
-      } catch {
-        // ignore invalid legacy paths
+      } catch (err: unknown) {
+        swallowed("ignore invalid legacy paths", err);
       }
     }
     const sessionDirEntries = fs.readdirSync(sessionsDir, { withFileTypes: true });

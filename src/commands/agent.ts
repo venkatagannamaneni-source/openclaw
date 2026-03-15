@@ -81,6 +81,7 @@ import {
 } from "../infra/agent-events.js";
 import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
+import { swallowed } from "../logging/swallowed.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -521,8 +522,8 @@ async function prepareAgentCommandExecution(
       if (snapshot.valid) {
         return snapshot.resolved;
       }
-    } catch {
-      // Fall back to runtime-loaded config when source snapshot is unavailable.
+    } catch (err: unknown) {
+      swallowed("Fall back to runtime-loaded config when source snapshot is unavailable", err);
     }
     return loadedRaw;
   })();

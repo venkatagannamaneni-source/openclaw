@@ -1,6 +1,7 @@
 import type { ReplyToMode } from "../config/config.js";
 import type { TelegramAccountConfig } from "../config/types.telegram.js";
 import { danger } from "../globals.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   buildTelegramMessageContext,
@@ -99,8 +100,11 @@ export const createTelegramMessageProcessor = (deps: TelegramMessageProcessorDep
           "Something went wrong while processing your request. Please try again.",
           context.threadSpec?.id != null ? { message_thread_id: context.threadSpec.id } : undefined,
         );
-      } catch {
-        // Best-effort fallback; delivery may fail if the bot was blocked or the chat is invalid.
+      } catch (err: unknown) {
+        swallowed(
+          "Best-effort fallback; delivery may fail if the bot was blocked or the chat is invalid",
+          err,
+        );
       }
     }
   };

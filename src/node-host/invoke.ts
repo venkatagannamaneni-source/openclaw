@@ -19,6 +19,7 @@ import {
   type ExecHostResponse,
 } from "../infra/exec-host.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { buildSystemRunApprovalPlan, handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {
@@ -238,8 +239,8 @@ async function runCommand(
         timedOut = true;
         try {
           child.kill("SIGKILL");
-        } catch {
-          // ignore
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
       }, timeoutMs);
     }
@@ -603,8 +604,8 @@ async function sendInvokeResult(
 ) {
   try {
     await client.request("node.invoke.result", buildNodeInvokeResultParams(frame, result));
-  } catch {
-    // ignore: node invoke responses are best-effort
+  } catch (err: unknown) {
+    swallowed("ignore: node invoke responses are best-effort", err);
   }
 }
 
@@ -654,7 +655,7 @@ async function sendNodeEvent(client: GatewayClient, event: string, payload: unkn
       event,
       payloadJSON: payload ? JSON.stringify(payload) : null,
     });
-  } catch {
-    // ignore: node events are best-effort
+  } catch (err: unknown) {
+    swallowed("ignore: node events are best-effort", err);
   }
 }

@@ -19,6 +19,7 @@ import {
   discoverAllSessions,
   type DiscoveredSession,
 } from "../../infra/session-cost-usage.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import {
   buildUsageAggregateTail,
@@ -453,8 +454,8 @@ export const usageHandlers: GatewayRequestHandlers = {
             storeEntry,
           });
         }
-      } catch {
-        // File doesn't exist - no results for this key
+      } catch (err: unknown) {
+        swallowed("File doesn't exist - no results for this key", err);
       }
     } else {
       // Full discovery for list view

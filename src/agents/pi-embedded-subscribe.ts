@@ -4,6 +4,7 @@ import { createStreamingDirectiveAccumulator } from "../auto-reply/reply/streami
 import { formatToolAggregate } from "../auto-reply/tool-meta.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { InlineCodeState } from "../markdown/code-spans.js";
 import { buildCodeSpanIndex, createInlineCodeState } from "../markdown/code-spans.js";
 import { EmbeddedBlockChunker } from "./pi-embedded-block-chunker.js";
@@ -344,8 +345,8 @@ export function subscribeEmbeddedPiSession(params: SubscribeEmbeddedPiSessionPar
         text: cleanedText,
         mediaUrls: filteredMediaUrls.length ? filteredMediaUrls : undefined,
       });
-    } catch {
-      // ignore tool result delivery failures
+    } catch (err: unknown) {
+      swallowed("ignore tool result delivery failures", err);
     }
   };
   const emitToolSummary = (toolName?: string, meta?: string) => {

@@ -1,3 +1,4 @@
+import { swallowed } from "../logging/swallowed.js";
 import { isRecord } from "../utils.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 
@@ -29,8 +30,11 @@ function coerceApiHost(params: {
   try {
     const url = new URL(raw);
     return url.origin;
-  } catch {
-    /* intentionally suppressed: raw may not be a valid URL, try with https:// prefix */
+  } catch (err: unknown) {
+    swallowed(
+      "intentionally suppressed: raw may not be a valid URL, try with https:// prefix",
+      err,
+    );
   }
 
   try {

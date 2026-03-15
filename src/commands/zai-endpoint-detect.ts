@@ -1,3 +1,4 @@
+import { swallowed } from "../logging/swallowed.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
 import {
   ZAI_CN_BASE_URL,
@@ -76,8 +77,8 @@ async function probeZaiChatCompletions(params: {
       if (typeof msg === "string") {
         errorMessage = msg;
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
 
     return { ok: false, status: res.status, errorCode, errorMessage };

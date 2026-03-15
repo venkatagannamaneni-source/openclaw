@@ -531,8 +531,8 @@ async function handleImportProfile(
     if (typeof body === "object" && body !== null) {
       autoMerge = (body as { autoMerge?: boolean }).autoMerge === true;
     }
-  } catch {
-    // Ignore body parse errors - use defaults
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Ignore body parse errors - use defaults", err);
   }
 
   ctx.log?.info(`[${accountId}] Importing profile for ${pubkey.slice(0, 8)}...`);

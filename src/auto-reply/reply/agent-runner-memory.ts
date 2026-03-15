@@ -23,6 +23,7 @@ import {
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions } from "../types.js";
@@ -93,8 +94,8 @@ function parseUsageFromTranscriptLine(line: string): ReturnType<typeof normalize
     if (usage && hasNonzeroUsage(usage)) {
       return usage;
     }
-  } catch {
-    // ignore bad lines
+  } catch (err: unknown) {
+    swallowed("ignore bad lines", err);
   }
   return undefined;
 }

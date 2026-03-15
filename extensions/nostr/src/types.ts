@@ -89,8 +89,12 @@ export function resolveNostrAccount(opts: {
   if (configured) {
     try {
       publicKey = getPublicKeyFromPrivate(privateKey);
-    } catch {
-      // Invalid key - leave publicKey empty, configured will indicate issues
+    } catch (err: unknown) {
+      console.debug(
+        "[swallowed]",
+        "Invalid key - leave publicKey empty, configured will indicate issues",
+        err,
+      );
     }
   }
 

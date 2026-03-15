@@ -19,6 +19,7 @@ import { detectCommandObfuscation } from "../infra/exec-obfuscation-detect.js";
 import { buildNodeShellCommand } from "../infra/node-shell.js";
 import { parsePreparedSystemRunPayload } from "../infra/system-run-approval-context.js";
 import { logInfo } from "../logger.js";
+import { swallowed } from "../logging/swallowed.js";
 import { sendExecApprovalFollowup } from "./bash-tools.exec-approval-followup.js";
 import {
   buildExecApprovalRequesterContext,
@@ -173,8 +174,8 @@ export async function executeNodeHostCommand(
         allowlistSatisfied = allowlistEval.allowlistSatisfied;
         analysisOk = allowlistEval.analysisOk;
       }
-    } catch {
-      // Fall back to requiring approval if node approvals cannot be fetched.
+    } catch (err: unknown) {
+      swallowed("Fall back to requiring approval if node approvals cannot be fetched", err);
     }
   }
   const obfuscation = detectCommandObfuscation(params.command);

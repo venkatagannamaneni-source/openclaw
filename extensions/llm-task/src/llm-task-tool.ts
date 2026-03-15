@@ -26,8 +26,8 @@ async function loadRunEmbeddedPiAgent(): Promise<RunEmbeddedPiAgentFn> {
       // oxlint-disable-next-line typescript/no-explicit-any
       return (mod as any).runEmbeddedPiAgent;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
 
   // Bundled install (built)
@@ -269,8 +269,8 @@ export function createLlmTaskTool(api: OpenClawPluginApi) {
         if (tmpDir) {
           try {
             await fs.rm(tmpDir, { recursive: true, force: true });
-          } catch {
-            // ignore
+          } catch (err: unknown) {
+            console.debug("[swallowed]", "ignore", err);
           }
         }
       }

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { hasBinary } from "../agents/skills.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runCommandWithTimeout, type SpawnResult } from "../process/exec.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizeServePath } from "./gmail.js";
@@ -75,8 +76,8 @@ function findExecutablesOnPath(bins: string[]): string[] {
         fs.accessSync(candidate, fs.constants.X_OK);
         matches.push(candidate);
         seen.add(candidate);
-      } catch {
-        // keep scanning
+      } catch (err: unknown) {
+        swallowed("keep scanning", err);
       }
     }
   }
@@ -108,8 +109,8 @@ function ensureGcloudOnPath(): boolean {
       fs.accessSync(candidate, fs.constants.X_OK);
       ensurePathIncludes(path.dirname(candidate), "append");
       return true;
-    } catch {
-      // keep scanning
+    } catch (err: unknown) {
+      swallowed("keep scanning", err);
     }
   }
   return false;
@@ -136,8 +137,8 @@ export async function resolvePythonExecutablePath(): Promise<string | undefined>
       fs.accessSync(resolved, fs.constants.X_OK);
       cachedPythonPath = resolved;
       return resolved;
-    } catch {
-      // keep scanning
+    } catch (err: unknown) {
+      swallowed("keep scanning", err);
     }
   }
   cachedPythonPath = null;
@@ -347,8 +348,8 @@ export async function resolveProjectIdFromGogCredentials(): Promise<string | nul
       if (projectId) {
         return projectId;
       }
-    } catch {
-      // keep scanning
+    } catch (err: unknown) {
+      swallowed("keep scanning", err);
     }
   }
   return null;

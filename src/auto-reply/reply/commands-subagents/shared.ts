@@ -19,6 +19,7 @@ import type {
 import { parseDiscordTarget } from "../../../discord/targets.js";
 import { callGateway } from "../../../gateway/call.js";
 import { formatTimeAgo } from "../../../infra/format-time/format-relative.ts";
+import { swallowed } from "../../../logging/swallowed.js";
 import { parseAgentSessionKey } from "../../../routing/session-key.js";
 import { isSubagentSessionKey } from "../../../routing/session-key.js";
 import { looksLikeSessionId } from "../../../sessions/session-id.js";
@@ -340,8 +341,8 @@ export function resolveDiscordChannelIdForFocus(
       if (target?.kind === "channel" && target.id) {
         return target.id;
       }
-    } catch {
-      // Ignore parse failures and try the next candidate.
+    } catch (err: unknown) {
+      swallowed("Ignore parse failures and try the next candidate", err);
     }
   }
   return undefined;
@@ -392,8 +393,8 @@ export async function resolveFocusTargetSession(params: {
         agentId: parsed?.agentId ?? "main",
         label: token,
       };
-    } catch {
-      // Try the next resolution strategy.
+    } catch (err: unknown) {
+      swallowed("Try the next resolution strategy", err);
     }
   }
   return null;

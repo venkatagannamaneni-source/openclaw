@@ -5,6 +5,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { resolveOAuthDir } from "../config/paths.js";
 import { info, success } from "../globals.js";
 import { getChildLogger } from "../logging.js";
+import { swallowed } from "../logging/swallowed.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import type { WebChannel } from "../utils.js";
@@ -70,12 +71,12 @@ export function maybeRestoreCredsFromBackup(authDir: string): void {
     fsSync.copyFileSync(backupPath, credsPath);
     try {
       fsSync.chmodSync(credsPath, 0o600);
-    } catch {
-      // best-effort on platforms that support it
+    } catch (err: unknown) {
+      swallowed("best-effort on platforms that support it", err);
     }
     logger.warn({ credsPath }, "restored corrupted WhatsApp creds.json from backup");
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    swallowed("ignore", err);
   }
 }
 

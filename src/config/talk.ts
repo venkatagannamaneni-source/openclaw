@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 import type {
   ResolvedTalkConfig,
   TalkConfig,
@@ -334,8 +335,8 @@ export function readTalkApiKeyFromProfile(deps: TalkApiKeyDeps = {}): string | n
       if (value) {
         return value;
       }
-    } catch {
-      // Ignore profile read errors.
+    } catch (err: unknown) {
+      swallowed("Ignore profile read errors", err);
     }
   }
   return null;

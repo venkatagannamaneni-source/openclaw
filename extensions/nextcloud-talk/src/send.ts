@@ -153,8 +153,8 @@ export async function sendMessageNextcloudTalk(
     if (typeof data.ocs?.data?.timestamp === "number") {
       timestamp = data.ocs.data.timestamp;
     }
-  } catch {
-    // Response parsing failed, but message was sent.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Response parsing failed, but message was sent", err);
   }
 
   if (opts.verbose) {

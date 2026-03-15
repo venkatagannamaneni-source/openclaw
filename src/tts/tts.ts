@@ -25,6 +25,7 @@ import type {
 import { logVerbose } from "../globals.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { stripMarkdown } from "../line/markdown-to-line.js";
+import { swallowed } from "../logging/swallowed.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
 import {
@@ -411,8 +412,8 @@ function atomicWriteFileSync(filePath: string, content: string): void {
   } catch (err) {
     try {
       unlinkSync(tmpPath);
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
     throw err;
   }
@@ -630,16 +631,16 @@ export async function textToSpeech(params: {
             } catch (fallbackErr) {
               try {
                 rmSync(tempDir, { recursive: true, force: true });
-              } catch {
-                // ignore cleanup errors
+              } catch (err: unknown) {
+                swallowed("ignore cleanup errors", err);
               }
               throw fallbackErr;
             }
           } else {
             try {
               rmSync(tempDir, { recursive: true, force: true });
-            } catch {
-              // ignore cleanup errors
+            } catch (err: unknown) {
+              swallowed("ignore cleanup errors", err);
             }
             throw err;
           }

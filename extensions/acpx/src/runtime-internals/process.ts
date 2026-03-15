@@ -227,8 +227,8 @@ export async function spawnAndCollect(
     aborted = true;
     try {
       child.kill("SIGTERM");
-    } catch {
-      // Ignore kill races when child already exited.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore kill races when child already exited", err);
     }
     abortKillTimer = setTimeout(() => {
       if (child.exitCode !== null || child.signalCode !== null) {
@@ -236,8 +236,8 @@ export async function spawnAndCollect(
       }
       try {
         child.kill("SIGKILL");
-      } catch {
-        // Ignore kill races when child already exited.
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Ignore kill races when child already exited", err);
       }
     }, 250);
     abortKillTimer.unref?.();

@@ -11,6 +11,7 @@ import {
 import { callGateway } from "../gateway/call.js";
 import { createBoundDeliveryRouter } from "../infra/outbound/bound-delivery-router.js";
 import type { ConversationRef } from "../infra/outbound/session-binding-service.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { normalizeAccountId, normalizeMainKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
@@ -284,8 +285,8 @@ async function readLatestSubagentOutput(sessionKey: string): Promise<string | un
     if (latestAssistant?.trim()) {
       return latestAssistant;
     }
-  } catch {
-    // Best-effort: fall back to richer history parsing below.
+  } catch (err: unknown) {
+    swallowed("Best-effort: fall back to richer history parsing below", err);
   }
   const history = await callGateway<{ messages?: Array<unknown> }>({
     method: "chat.history",
@@ -1258,8 +1259,8 @@ export async function runSubagentAnnounceFlow(params: {
           childCompletionFindings = buildChildCompletionFindings(directChildren);
         }
       }
-    } catch {
-      // Best-effort only.
+    } catch (err: unknown) {
+      swallowed("Best-effort only", err);
     }
 
     const announceId = buildAnnounceIdFromChildRun({
@@ -1461,8 +1462,8 @@ export async function runSubagentAnnounceFlow(params: {
           params: { key: params.childSessionKey, label: params.label },
           timeoutMs: 10_000,
         });
-      } catch {
-        // Best-effort
+      } catch (err: unknown) {
+        swallowed("Best-effort", err);
       }
     }
     if (shouldDeleteChildSession) {
@@ -1476,8 +1477,8 @@ export async function runSubagentAnnounceFlow(params: {
           },
           timeoutMs: 10_000,
         });
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     }
   }

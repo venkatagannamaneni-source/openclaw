@@ -175,8 +175,8 @@ async function resolveChannelIdByName(params: {
         channelByNameCache.set(key, channel.id);
         return channel.id;
       }
-    } catch {
-      // Channel not found in this team, try next
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Channel not found in this team, try next", err);
     }
   }
   throw new Error(`Mattermost channel "#${name}" not found in any team the bot belongs to`);

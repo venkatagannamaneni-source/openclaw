@@ -15,8 +15,8 @@ export function formatToolOutputForSidebar(text: string): string {
     try {
       const parsed = JSON.parse(trimmed);
       return "```json\n" + JSON.stringify(parsed, null, 2) + "\n```";
-    } catch {
-      // Not valid JSON, return as-is
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Not valid JSON, return as-is", err);
     }
   }
   return text;

@@ -1,5 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import process from "node:process";
+import { swallowed } from "../logging/swallowed.js";
 
 export type ChildProcessBridgeOptions = {
   signals?: NodeJS.Signals[];
@@ -21,15 +22,15 @@ export function attachChildProcessBridge(
       onSignal?.(signal);
       try {
         child.kill(signal);
-      } catch {
-        // ignore
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     };
     try {
       process.on(signal, listener);
       listeners.set(signal, listener);
-    } catch {
-      // Unsupported signal on this platform.
+    } catch (err: unknown) {
+      swallowed("Unsupported signal on this platform", err);
     }
   }
 

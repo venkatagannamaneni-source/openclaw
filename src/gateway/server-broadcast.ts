@@ -1,3 +1,4 @@
+import { swallowed } from "../logging/swallowed.js";
 import { MAX_BUFFERED_BYTES } from "./server-constants.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
 import { logWs, shouldLogWs, summarizeAgentEventForWsLog } from "./ws-log.js";
@@ -104,15 +105,15 @@ export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient>
       if (slow) {
         try {
           c.socket.close(1008, "slow consumer");
-        } catch {
-          /* ignore */
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
         continue;
       }
       try {
         c.socket.send(frame);
-      } catch {
-        /* ignore */
+      } catch (err: unknown) {
+        swallowed("ignore", err);
       }
     }
   };

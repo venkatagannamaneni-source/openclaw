@@ -111,8 +111,8 @@ export async function startNgrokTunnel(config: {
             },
           });
         }
-      } catch {
-        // Not JSON, might be startup message
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Not JSON, might be startup message", err);
       }
     };
 

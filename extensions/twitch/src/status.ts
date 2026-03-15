@@ -48,8 +48,8 @@ export function collectTwitchStatusIssues(
           channels?: { twitch?: { accounts?: Record<string, unknown> } };
         };
         account = getAccountConfig(cfg, accountId);
-      } catch {
-        // Ignore config access errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Ignore config access errors", err);
       }
     }
 

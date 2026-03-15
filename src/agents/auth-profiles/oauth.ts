@@ -3,6 +3,7 @@ import { getOAuthApiKey, getOAuthProviders } from "@mariozechner/pi-ai/oauth";
 import { loadConfig, type OpenClawConfig } from "../../config/config.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { withFileLock } from "../../infra/file-lock.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { refreshQwenPortalCredentials } from "../../providers/qwen-portal-oauth.js";
 import { resolveSecretRefString, type SecretRefResolveCache } from "../../secrets/resolve.js";
 import { refreshChutesTokens } from "../chutes-oauth.js";
@@ -422,8 +423,8 @@ export async function resolveApiKeyForProfile(
         if (fallbackResolved) {
           return fallbackResolved;
         }
-      } catch {
-        // keep original error
+      } catch (err: unknown) {
+        swallowed("keep original error", err);
       }
     }
 
@@ -447,8 +448,8 @@ export async function resolveApiKeyForProfile(
             email: mainCred.email,
           });
         }
-      } catch {
-        // keep original error if main agent fallback also fails
+      } catch (err: unknown) {
+        swallowed("keep original error if main agent fallback also fails", err);
       }
     }
 

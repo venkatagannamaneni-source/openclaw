@@ -1,4 +1,5 @@
 import path from "node:path";
+import { swallowed } from "../../logging/swallowed.js";
 import { ensureMediaDir, saveMediaBuffer } from "../../media/store.js";
 import { captureScreenshot, snapshotAria } from "../cdp.js";
 import { withBrowserNavigationPolicy } from "../navigation-guard.js";
@@ -79,8 +80,8 @@ export async function resolveTargetIdAfterNavigate(opts: {
       await new Promise((r) => setTimeout(r, 800));
       currentTargetId = pickReplacement(await opts.listTabs());
     }
-  } catch {
-    // Best-effort: fall back to pre-navigation targetId
+  } catch (err: unknown) {
+    swallowed("Best-effort: fall back to pre-navigation targetId", err);
   }
   return currentTargetId;
 }

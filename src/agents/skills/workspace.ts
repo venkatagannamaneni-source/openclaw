@@ -9,6 +9,7 @@ import {
 import type { OpenClawConfig } from "../../config/config.js";
 import { isPathInside } from "../../infra/path-guards.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { CONFIG_DIR, resolveUserPath } from "../../utils.js";
 import { resolveSandboxPath } from "../sandbox-paths.js";
 import { resolveBundledSkillsDir } from "./bundled-dir.js";
@@ -165,8 +166,8 @@ function listChildDirectories(dir: string): string[] {
           if (fs.statSync(fullPath).isDirectory()) {
             dirs.push(entry.name);
           }
-        } catch {
-          // ignore broken symlinks
+        } catch (err: unknown) {
+          swallowed("ignore broken symlinks", err);
         }
       }
     }
@@ -513,8 +514,8 @@ function loadSkillEntries(
     try {
       const raw = fs.readFileSync(skill.filePath, "utf-8");
       frontmatter = parseFrontmatter(raw);
-    } catch {
-      // ignore malformed skills
+    } catch (err: unknown) {
+      swallowed("ignore malformed skills", err);
     }
     return {
       skill,

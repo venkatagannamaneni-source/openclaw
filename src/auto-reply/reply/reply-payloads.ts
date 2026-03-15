@@ -3,6 +3,7 @@ import type { MessagingToolSend } from "../../agents/pi-embedded-runner.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ReplyToMode } from "../../config/types.js";
 import { normalizeTargetForProvider } from "../../infra/outbound/target-normalization.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
 import type { OriginatingChannelType } from "../templating.js";
@@ -119,8 +120,8 @@ export function filterMessagingToolMediaDuplicates(params: {
       if (parsed.protocol === "file:") {
         return decodeURIComponent(parsed.pathname || "");
       }
-    } catch {
-      // Keep fallback below for non-URL-like inputs.
+    } catch (err: unknown) {
+      swallowed("Keep fallback below for non-URL-like inputs", err);
     }
     return trimmed.replace(/^file:\/\//i, "");
   };

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { parseStrictInteger, parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
+import { swallowed } from "../logging/swallowed.js";
 import { splitArgsPreservingQuotes } from "./arg-split.js";
 import {
   LEGACY_GATEWAY_SYSTEMD_SERVICE_NAMES,
@@ -469,8 +470,8 @@ export async function installSystemdService({
     const backupPath = `${unitPath}.bak`;
     await fs.copyFile(unitPath, backupPath);
     backedUp = true;
-  } catch {
-    // File does not exist yet — nothing to back up.
+  } catch (err: unknown) {
+    swallowed("File does not exist yet — nothing to back up", err);
   }
 
   const serviceDescription = resolveGatewayServiceDescription({ env, environment, description });
@@ -670,8 +671,8 @@ export async function findLegacySystemdUnits(env: GatewayServiceEnv): Promise<Le
     try {
       await fs.access(unitPath);
       exists = true;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
     let enabled = false;
     if (systemctlAvailable) {

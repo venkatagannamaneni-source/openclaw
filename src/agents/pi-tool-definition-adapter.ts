@@ -5,6 +5,7 @@ import type {
 } from "@mariozechner/pi-agent-core";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { logDebug, logError } from "../logger.js";
+import { swallowed } from "../logging/swallowed.js";
 import { isPlainObject } from "../utils.js";
 import type { ClientToolDefinition } from "./pi-embedded-runner/run/params.js";
 import type { HookContext } from "./pi-tools.before-tool-call.js";
@@ -69,8 +70,8 @@ function stringifyToolPayload(payload: unknown): string {
     if (typeof encoded === "string") {
       return encoded;
     }
-  } catch {
-    // Fall through to String(payload) for non-serializable values.
+  } catch (err: unknown) {
+    swallowed("Fall through to String(payload) for non-serializable values", err);
   }
   return String(payload);
 }

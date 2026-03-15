@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { expandHomePrefix, resolveRequiredHomeDir } from "../../infra/home-dir.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
 import { resolveStateDir } from "../paths.js";
 
@@ -269,8 +270,8 @@ export function resolveSessionFilePath(
   if (candidate) {
     try {
       return resolvePathWithinSessionsDir(sessionsDir, candidate, { agentId: opts?.agentId });
-    } catch {
-      // Keep handlers alive when persisted metadata is stale/corrupt.
+    } catch (err: unknown) {
+      swallowed("Keep handlers alive when persisted metadata is stale/corrupt", err);
     }
   }
   return resolveSessionTranscriptPathInDir(sessionId, sessionsDir);

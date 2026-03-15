@@ -4,6 +4,7 @@ import { resolveCronStaggerMs } from "../../cron/stagger.js";
 import type { CronJob, CronSchedule } from "../../cron/types.js";
 import { danger } from "../../globals.js";
 import { formatDurationHuman } from "../../infra/format-time/format-duration.ts";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import type { GatewayRpcOpts } from "../gateway-rpc.js";
@@ -40,8 +41,8 @@ export async function warnIfCronSchedulerDisabled(opts: GatewayRpcOpts) {
         .filter(Boolean)
         .join("\n"),
     );
-  } catch {
-    // Ignore status failures (older gateway, offline, etc.)
+  } catch (err: unknown) {
+    swallowed("Ignore status failures (older gateway, offline, etc.)", err);
   }
 }
 

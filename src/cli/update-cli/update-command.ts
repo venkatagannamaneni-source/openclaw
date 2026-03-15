@@ -29,6 +29,7 @@ import {
   resolveGlobalPackageRoot,
 } from "../../infra/update-global.js";
 import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update-runner.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { syncPluginsForUpdateChannel, updateNpmInstalledPlugins } from "../../plugins/update.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -830,8 +831,8 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         restartScriptPath = await prepareRestartScript(process.env, gatewayPort);
         refreshGatewayServiceEnv = true;
       }
-    } catch {
-      // Ignore errors during pre-check; fallback to standard restart
+    } catch (err: unknown) {
+      swallowed("Ignore errors during pre-check; fallback to standard restart", err);
     }
   }
 

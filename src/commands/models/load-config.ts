@@ -6,6 +6,7 @@ import {
   setRuntimeConfigSnapshot,
   type OpenClawConfig,
 } from "../../config/config.js";
+import { swallowed } from "../../logging/swallowed.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 export type LoadedModelsConfig = {
@@ -20,8 +21,8 @@ async function loadSourceConfigSnapshot(fallback: OpenClawConfig): Promise<OpenC
     if (snapshot.valid) {
       return snapshot.resolved;
     }
-  } catch {
-    // Fall back to runtime-loaded config if source snapshot cannot be read.
+  } catch (err: unknown) {
+    swallowed("Fall back to runtime-loaded config if source snapshot cannot be read", err);
   }
   return fallback;
 }

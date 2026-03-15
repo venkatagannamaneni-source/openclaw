@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
+import { swallowed } from "../logging/swallowed.js";
 import { resolveConfigDir, resolveUserPath } from "../utils.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 import {
@@ -181,8 +182,8 @@ function checkPathStatAndPermissions(params: {
         }
         stat = repairedStat;
         modeBits = repairedStat.mode & 0o777;
-      } catch {
-        // Fall through to the normal block path below when repair is not possible.
+      } catch (err: unknown) {
+        swallowed("Fall through to the normal block path below when repair is not possible", err);
       }
     }
     if ((modeBits & 0o002) !== 0) {

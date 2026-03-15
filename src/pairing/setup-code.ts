@@ -8,6 +8,7 @@ import {
 } from "../config/types.secrets.js";
 import { assertExplicitGatewayAuthModeWhenBothConfigured } from "../gateway/auth-mode-policy.js";
 import { resolveRequiredConfiguredSecretRefInputString } from "../gateway/resolve-configured-secret-input-string.js";
+import { swallowed } from "../logging/swallowed.js";
 import { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 import { isCarrierGradeNatIpv4Address, isRfc1918Ipv4Address } from "../shared/net/ip.js";
 import { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
@@ -84,8 +85,8 @@ function normalizeUrl(raw: string, schemeFallback: "ws" | "wss"): string | null 
     }
     const port = parsed.port ? `:${parsed.port}` : "";
     return `${resolvedScheme}://${host}${port}`;
-  } catch {
-    // Fall through to host:port parsing.
+  } catch (err: unknown) {
+    swallowed("Fall through to host:port parsing", err);
   }
 
   const withoutPath = trimmed.split("/")[0] ?? "";

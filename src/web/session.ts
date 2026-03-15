@@ -11,6 +11,7 @@ import qrcode from "qrcode-terminal";
 import { formatCliCommand } from "../cli/command-format.js";
 import { danger, success } from "../globals.js";
 import { getChildLogger, toPinoLikeLogger } from "../logging.js";
+import { swallowed } from "../logging/swallowed.js";
 import { ensureDir, resolveUserPath } from "../utils.js";
 import { VERSION } from "../version.js";
 import {
@@ -61,22 +62,22 @@ async function safeSaveCreds(
         fsSync.copyFileSync(credsPath, backupPath);
         try {
           fsSync.chmodSync(backupPath, 0o600);
-        } catch {
-          // best-effort on platforms that support it
+        } catch (err: unknown) {
+          swallowed("best-effort on platforms that support it", err);
         }
-      } catch {
-        // keep existing backup
+      } catch (err: unknown) {
+        swallowed("keep existing backup", err);
       }
     }
-  } catch {
-    // ignore backup failures
+  } catch (err: unknown) {
+    swallowed("ignore backup failures", err);
   }
   try {
     await Promise.resolve(saveCreds());
     try {
       fsSync.chmodSync(resolveWebCredsPath(authDir), 0o600);
-    } catch {
-      // best-effort on platforms that support it
+    } catch (err: unknown) {
+      swallowed("best-effort on platforms that support it", err);
     }
   } catch (err) {
     logger.warn({ error: String(err) }, "failed saving WhatsApp creds");

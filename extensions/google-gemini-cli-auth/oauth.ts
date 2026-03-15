@@ -130,8 +130,8 @@ export function extractGeminiCliCredentials(): { clientId: string; clientSecret:
       cachedGeminiCliCredentials = { clientId: idMatch[1], clientSecret: secretMatch[1] };
       return cachedGeminiCliCredentials;
     }
-  } catch {
-    // Gemini CLI not installed or extraction failed
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Gemini CLI not installed or extraction failed", err);
   }
   return null;
 }
@@ -190,8 +190,8 @@ function findFile(dir: string, name: string, depth: number): string | null {
         }
       }
     }
-  } catch {
-    /* best-effort: directory may not exist or be unreadable */
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "best-effort: directory may not exist or be unreadable", err);
   }
   return null;
 }
@@ -373,8 +373,8 @@ async function waitForLocalCallback(params: {
       }
       try {
         server.close();
-      } catch {
-        // ignore close errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "ignore close errors", err);
       }
       if (err) {
         reject(err);
@@ -460,8 +460,8 @@ async function getUserEmail(accessToken: string): Promise<string | undefined> {
       const data = (await response.json()) as { email?: string };
       return data.email;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
   return undefined;
 }

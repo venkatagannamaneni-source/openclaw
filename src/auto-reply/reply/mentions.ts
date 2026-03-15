@@ -2,6 +2,7 @@ import { resolveAgentConfig } from "../../agents/agent-scope.js";
 import { getChannelDock } from "../../channels/dock.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { escapeRegExp } from "../../utils.js";
 import type { MsgContext } from "../templating.js";
 
@@ -161,8 +162,8 @@ export function stripMentions(
     try {
       const re = new RegExp(p, "gi");
       result = result.replace(re, " ");
-    } catch {
-      // ignore invalid regex
+    } catch (err: unknown) {
+      swallowed("ignore invalid regex", err);
     }
   }
   if (providerMentions?.stripMentions) {

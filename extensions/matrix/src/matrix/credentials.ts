@@ -108,8 +108,8 @@ export function clearMatrixCredentials(
     if (fs.existsSync(credPath)) {
       fs.unlinkSync(credPath);
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
 }
 

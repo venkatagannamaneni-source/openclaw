@@ -1,6 +1,7 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { ImageContent } from "@mariozechner/pi-ai";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { swallowed } from "../logging/swallowed.js";
 import { canonicalizeBase64 } from "../media/base64.js";
 import {
   buildImageResizeSideGrid,
@@ -97,8 +98,8 @@ function fileNameFromPathLike(pathLike: string): string | undefined {
     const url = new URL(value);
     const candidate = url.pathname.split("/").filter(Boolean).at(-1);
     return candidate && candidate.length > 0 ? candidate : undefined;
-  } catch {
-    // Not a URL; continue with path-like parsing.
+  } catch (err: unknown) {
+    swallowed("Not a URL; continue with path-like parsing", err);
   }
 
   const normalized = value.replaceAll("\\", "/");

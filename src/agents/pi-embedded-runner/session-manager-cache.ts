@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import { isCacheEnabled, resolveCacheTtlMs } from "../../config/cache-utils.js";
+import { swallowed } from "../../logging/swallowed.js";
 
 type SessionManagerCacheEntry = {
   sessionFile: string;
@@ -63,7 +64,7 @@ export async function prewarmSessionFile(sessionFile: string): Promise<void> {
       await handle.close();
     }
     trackSessionManagerAccess(sessionFile);
-  } catch {
-    // File doesn't exist yet, SessionManager will create it
+  } catch (err: unknown) {
+    swallowed("File doesn't exist yet, SessionManager will create it", err);
   }
 }

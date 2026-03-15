@@ -448,8 +448,8 @@ function resolveMediaFileName(params: {
     if (fromPath) {
       return fromPath;
     }
-  } catch {
-    // ignore URL parse failures
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore URL parse failures", err);
   }
 
   const ext =
@@ -594,8 +594,8 @@ function clearCredentials(profile: string): boolean {
       fs.unlinkSync(filePath);
       return true;
     }
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
   return false;
 }
@@ -656,8 +656,8 @@ function invalidateApi(profileInput?: string | null): void {
   if (api) {
     try {
       api.listener.stop();
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
   }
   apiByProfile.delete(profile);
@@ -676,8 +676,8 @@ function resetQrLogin(profileInput?: string | null): void {
   }
   try {
     active.abort?.();
-  } catch {
-    // ignore
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "ignore", err);
   }
   activeQrLogins.delete(profile);
 }
@@ -1149,8 +1149,8 @@ async function resolveOwnUserId(api: API): Promise<string> {
     if (resolved) {
       return resolved;
     }
-  } catch {
-    // Fall back to getOwnId when account info shape changes.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Fall back to getOwnId when account info shape changes", err);
   }
 
   try {
@@ -1158,8 +1158,12 @@ async function resolveOwnUserId(api: API): Promise<string> {
     if (ownId) {
       return ownId;
     }
-  } catch {
-    // Ignore fallback probe failures and keep mention detection conservative.
+  } catch (err: unknown) {
+    console.debug(
+      "[swallowed]",
+      "Ignore fallback probe failures and keep mention detection conservative",
+      err,
+    );
   }
 
   return "";
@@ -1305,8 +1309,8 @@ export async function startZaloQrLogin(params: {
             current.abort = () => {
               try {
                 event.actions?.abort?.();
-              } catch {
-                // ignore
+              } catch (err: unknown) {
+                console.debug("[swallowed]", "ignore", err);
               }
             };
           }
@@ -1475,8 +1479,8 @@ export async function logoutZaloProfile(profileInput?: string | null): Promise<{
   if (listener) {
     try {
       listener.stop();
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
     activeListeners.delete(profile);
   }
@@ -1526,13 +1530,13 @@ export async function startZaloListener(params: {
       api.listener.off("message", onMessage);
       api.listener.off("error", onError);
       api.listener.off("closed", onClosed);
-    } catch {
-      // ignore listener detachment errors
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore listener detachment errors", err);
     }
     try {
       api.listener.stop();
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
     activeListeners.delete(profile);
   };

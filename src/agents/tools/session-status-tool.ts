@@ -16,6 +16,7 @@ import {
   loadProviderUsageSummary,
   resolveUsageProviderId,
 } from "../../infra/provider-usage.js";
+import { swallowed } from "../../logging/swallowed.js";
 import {
   buildAgentMainSessionKey,
   DEFAULT_AGENT_ID,
@@ -388,8 +389,8 @@ export function createSessionStatusTool(opts?: {
               usageLine = `📊 Usage: ${formatted}`;
             }
           }
-        } catch {
-          // ignore
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
       }
 

@@ -34,6 +34,7 @@ import type { DiscordAccountConfig } from "../../config/types.discord.js";
 import { logVerbose } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { logDebug, logError } from "../../logger.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { issuePairingChallenge } from "../../pairing/pairing-challenge.js";
 import { upsertChannelPairingRequest } from "../../pairing/pairing-store.js";
@@ -297,8 +298,8 @@ async function ensureGuildComponentMemberAllowed(params: {
       content: unauthorizedReply,
       ...replyOpts,
     });
-  } catch {
-    // Interaction may have expired
+  } catch (err: unknown) {
+    swallowed("Interaction may have expired", err);
   }
   return false;
 }
@@ -341,8 +342,8 @@ async function ensureComponentUserAllowed(params: {
       content: params.unauthorizedReply,
       ...params.replyOpts,
     });
-  } catch {
-    // Interaction may have expired
+  } catch (err: unknown) {
+    swallowed("Interaction may have expired", err);
   }
   return false;
 }
@@ -491,8 +492,8 @@ async function ensureDmComponentAuthorized(params: {
         content: "DM interactions are disabled.",
         ...replyOpts,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return false;
   }
@@ -551,8 +552,8 @@ async function ensureDmComponentAuthorized(params: {
           content: "Pairing already requested. Ask the bot owner to approve your code.",
           ...replyOpts,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
     }
     return false;
@@ -564,8 +565,8 @@ async function ensureDmComponentAuthorized(params: {
       content: `You are not authorized to use this ${componentLabel}.`,
       ...replyOpts,
     });
-  } catch {
-    // Interaction may have expired
+  } catch (err: unknown) {
+    swallowed("Interaction may have expired", err);
   }
   return false;
 }
@@ -1063,8 +1064,8 @@ async function handleDiscordComponentEvent(params: {
         content: "This component is no longer valid.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1076,8 +1077,8 @@ async function handleDiscordComponentEvent(params: {
         content: "This component has expired.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1138,8 +1139,8 @@ async function handleDiscordComponentEvent(params: {
         content: "This component has expired.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1150,8 +1151,8 @@ async function handleDiscordComponentEvent(params: {
         content: "This form is no longer available.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1202,8 +1203,8 @@ async function handleDiscordModalTrigger(params: {
         content: "This button is no longer valid.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1214,8 +1215,8 @@ async function handleDiscordModalTrigger(params: {
         content: "This button has expired.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1227,8 +1228,8 @@ async function handleDiscordModalTrigger(params: {
         content: "This form is no longer available.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1290,8 +1291,8 @@ async function handleDiscordModalTrigger(params: {
         content: "This form has expired.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1304,8 +1305,8 @@ async function handleDiscordModalTrigger(params: {
         content: "This form has expired.",
         ephemeral: true,
       });
-    } catch {
-      // Interaction may have expired
+    } catch (err: unknown) {
+      swallowed("Interaction may have expired", err);
     }
     return;
   }
@@ -1338,8 +1339,8 @@ export class AgentComponentButton extends Button {
           content: "This button is no longer valid.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -1427,8 +1428,8 @@ export class AgentSelectMenu extends StringSelectMenu {
           content: "This select menu is no longer valid.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -1664,8 +1665,8 @@ class DiscordComponentModal extends Modal {
           content: "This form is no longer valid.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -1677,8 +1678,8 @@ class DiscordComponentModal extends Modal {
           content: "This form has expired.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }
@@ -1726,8 +1727,8 @@ class DiscordComponentModal extends Modal {
           content: "This form has expired.",
           ephemeral: true,
         });
-      } catch {
-        // Interaction may have expired
+      } catch (err: unknown) {
+        swallowed("Interaction may have expired", err);
       }
       return;
     }

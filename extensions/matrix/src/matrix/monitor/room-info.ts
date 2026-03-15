@@ -20,8 +20,8 @@ export function createMatrixRoomInfoResolver(client: MatrixClient) {
     try {
       const nameState = await client.getRoomStateEvent(roomId, "m.room.name", "").catch(() => null);
       name = nameState?.name;
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
     try {
       const aliasState = await client
@@ -29,8 +29,8 @@ export function createMatrixRoomInfoResolver(client: MatrixClient) {
         .catch(() => null);
       canonicalAlias = aliasState?.alias;
       altAliases = aliasState?.alt_aliases ?? [];
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "ignore", err);
     }
     const info = { name, canonicalAlias, altAliases };
     roomInfoCache.set(roomId, info);

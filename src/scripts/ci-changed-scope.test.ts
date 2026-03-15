@@ -21,7 +21,9 @@ afterEach(() => {
   for (const markerPath of markerPaths) {
     try {
       fs.unlinkSync(markerPath);
-    } catch {}
+    } catch {
+      // best-effort cleanup
+    }
   }
   markerPaths.length = 0;
 });

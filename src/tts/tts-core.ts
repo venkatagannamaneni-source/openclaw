@@ -12,6 +12,7 @@ import {
 import { createConfiguredOllamaStreamFn } from "../agents/ollama-stream.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
 import type { OpenClawConfig } from "../config/config.js";
+import { swallowed } from "../logging/swallowed.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,
@@ -542,8 +543,8 @@ export function scheduleCleanup(
   const timer = setTimeout(() => {
     try {
       rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // ignore cleanup errors
+    } catch (err: unknown) {
+      swallowed("ignore cleanup errors", err);
     }
   }, delayMs);
   timer.unref();

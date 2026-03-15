@@ -1,4 +1,5 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { swallowed } from "../logging/swallowed.js";
 import { createSessionSlug as createSessionSlugId } from "./session-slug.js";
 
 const DEFAULT_JOB_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -186,8 +187,8 @@ function moveToFinished(session: ProcessSession, status: ProcessStatus) {
     // Only set flag if writable
     try {
       (session.stdin as { destroyed?: boolean }).destroyed = true;
-    } catch {
-      // Ignore if read-only
+    } catch (err: unknown) {
+      swallowed("Ignore if read-only", err);
     }
     delete session.stdin;
   }

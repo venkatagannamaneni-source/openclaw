@@ -1,3 +1,4 @@
+import { swallowed } from "../../logging/swallowed.js";
 import { loadConfig } from "../io.js";
 import { resolveStorePath } from "./paths.js";
 import { loadSessionStore } from "./store.js";
@@ -50,8 +51,8 @@ export function extractDeliveryInfo(sessionKey: string | undefined): {
         accountId: entry.deliveryContext.accountId,
       };
     }
-  } catch {
-    // ignore: best-effort
+  } catch (err: unknown) {
+    swallowed("ignore: best-effort", err);
   }
   return { deliveryContext, threadId };
 }

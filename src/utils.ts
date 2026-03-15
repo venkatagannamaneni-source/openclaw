@@ -9,6 +9,7 @@ import {
   resolveRequiredHomeDir,
 } from "./infra/home-dir.js";
 import { isPlainObject } from "./infra/plain-object.js";
+import { swallowed } from "./logging/swallowed.js";
 
 export async function ensureDir(dir: string) {
   await fs.promises.mkdir(dir, { recursive: true });
@@ -159,8 +160,8 @@ function readLidReverseMapping(lid: string, opts?: JidToE164Options): string | n
         continue;
       }
       return normalizeE164(String(phone));
-    } catch {
-      // Try the next location.
+    } catch (err: unknown) {
+      swallowed("Try the next location", err);
     }
   }
   return null;
@@ -304,8 +305,8 @@ export function resolveConfigDir(
     if (hasNew) {
       return newDir;
     }
-  } catch {
-    // best-effort
+  } catch (err: unknown) {
+    swallowed("best-effort", err);
   }
   return newDir;
 }

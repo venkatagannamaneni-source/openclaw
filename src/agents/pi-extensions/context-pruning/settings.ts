@@ -1,4 +1,5 @@
 import { parseDurationMs } from "../../../cli/parse-duration.js";
+import { swallowed } from "../../../logging/swallowed.js";
 
 export type ContextPruningToolMatch = {
   allow?: string[];
@@ -79,8 +80,8 @@ export function computeEffectiveSettings(raw: unknown): EffectiveContextPruningS
   if (typeof cfg.ttl === "string") {
     try {
       s.ttlMs = parseDurationMs(cfg.ttl, { defaultUnit: "m" });
-    } catch {
-      // keep default ttl
+    } catch (err: unknown) {
+      swallowed("keep default ttl", err);
     }
   }
 

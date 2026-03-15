@@ -2,6 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { bestEffortCatch } from "../infra/best-effort.js";
+import { swallowed } from "../logging/swallowed.js";
 import { getProcessStartTime, isPidAlive } from "../shared/pid-alive.js";
 import { resolveProcessScopedMap } from "../shared/process-scoped-map.js";
 
@@ -151,13 +152,13 @@ async function releaseHeldLock(
   held.releasePromise = (async () => {
     try {
       await held.handle.close();
-    } catch {
-      // Ignore errors during cleanup - best effort.
+    } catch (err: unknown) {
+      swallowed("Ignore errors during cleanup - best effort", err);
     }
     try {
       await fs.rm(held.lockPath, { force: true });
-    } catch {
-      // Ignore errors during cleanup - best effort.
+    } catch (err: unknown) {
+      swallowed("Ignore errors during cleanup - best effort", err);
     }
   })();
 
@@ -179,13 +180,13 @@ function releaseAllLocksSync(): void {
       if (typeof held.handle.close === "function") {
         void held.handle.close().catch(bestEffortCatch("close session lock file handle"));
       }
-    } catch {
-      // Ignore errors during cleanup - best effort
+    } catch (err: unknown) {
+      swallowed("Ignore errors during cleanup - best effort", err);
     }
     try {
       fsSync.rmSync(held.lockPath, { force: true });
-    } catch {
-      // Ignore errors during cleanup - best effort
+    } catch (err: unknown) {
+      swallowed("Ignore errors during cleanup - best effort", err);
     }
     HELD_LOCKS.delete(sessionFile);
   }
@@ -239,8 +240,8 @@ function handleTerminationSignal(signal: CleanupSignal): void {
     }
     try {
       process.kill(process.pid, signal);
-    } catch {
-      // Ignore errors during shutdown
+    } catch (err: unknown) {
+      swallowed("Ignore errors during shutdown", err);
     }
   }
 }
@@ -266,8 +267,8 @@ function registerCleanupHandlers(): void {
       const handler = () => handleTerminationSignal(signal);
       cleanupState.cleanupHandlers.set(signal, handler);
       process.on(signal, handler);
-    } catch {
-      // Ignore unsupported signals on this platform.
+    } catch (err: unknown) {
+      swallowed("Ignore unsupported signals on this platform", err);
     }
   }
 }
@@ -461,8 +462,8 @@ export async function acquireSessionWriteLock(params: {
   let normalizedDir = sessionDir;
   try {
     normalizedDir = await fs.realpath(sessionDir);
-  } catch {
-    // Fall back to the resolved path if realpath fails (permissions, transient FS).
+  } catch (err: unknown) {
+    swallowed("Fall back to the resolved path if realpath fails (permissions, transient FS)", err);
   }
   const normalizedSessionFile = path.join(normalizedDir, path.basename(sessionFile));
   const lockPath = `${normalizedSessionFile}.lock`;
@@ -509,13 +510,13 @@ export async function acquireSessionWriteLock(params: {
       if (handle) {
         try {
           await handle.close();
-        } catch {
-          // Ignore cleanup errors on failed lock initialization.
+        } catch (err: unknown) {
+          swallowed("Ignore cleanup errors on failed lock initialization", err);
         }
         try {
           await fs.rm(lockPath, { force: true });
-        } catch {
-          // Ignore cleanup errors on failed lock initialization.
+        } catch (err: unknown) {
+          swallowed("Ignore cleanup errors on failed lock initialization", err);
         }
       }
       const code = (err as { code?: unknown }).code;

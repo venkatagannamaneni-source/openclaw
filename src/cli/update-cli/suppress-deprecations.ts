@@ -1,3 +1,5 @@
+import { swallowed } from "../../logging/swallowed.js";
+
 /**
  * Suppress Node.js deprecation warnings.
  *
@@ -9,8 +11,8 @@
 export function suppressDeprecations(): void {
   try {
     process.noDeprecation = true;
-  } catch {
-    // read-only on Node v23+; NODE_NO_WARNINGS below covers this case
+  } catch (err: unknown) {
+    swallowed("read-only on Node v23+; NODE_NO_WARNINGS below covers this case", err);
   }
   process.env.NODE_NO_WARNINGS = "1";
 }

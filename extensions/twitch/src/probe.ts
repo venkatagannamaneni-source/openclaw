@@ -111,8 +111,8 @@ export async function probeTwitch(
     if (client) {
       try {
         client.quit();
-      } catch {
-        // Ignore cleanup errors
+      } catch (err: unknown) {
+        console.debug("[swallowed]", "Ignore cleanup errors", err);
       }
     }
   }

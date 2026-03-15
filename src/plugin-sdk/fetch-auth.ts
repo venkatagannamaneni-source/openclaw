@@ -1,3 +1,5 @@
+import { swallowed } from "../logging/swallowed.js";
+
 export type ScopeTokenProvider = {
   getAccessToken: (scope: string) => Promise<string>;
 };
@@ -62,8 +64,8 @@ export async function fetchWithBearerAuthScopeFallback(params: {
       if (!shouldRetry(authAttempt)) {
         continue;
       }
-    } catch {
-      // Ignore token/fetch errors and continue trying remaining scopes.
+    } catch (err: unknown) {
+      swallowed("Ignore token/fetch errors and continue trying remaining scopes", err);
     }
   }
 

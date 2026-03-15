@@ -16,6 +16,7 @@ import path from "node:path";
 import { RateLimitError, type RequestClient } from "@buape/carbon";
 import type { RetryRunner } from "../infra/retry-policy.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { parseFfprobeCodecAndSampleRate, runFfmpeg, runFfprobe } from "../media/ffmpeg-exec.js";
 import { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "../media/ffmpeg-limits.js";
 import { unlinkIfExists } from "../media/temp-files.js";
@@ -177,8 +178,8 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
       if (codec === "opus" && sampleRateHz === DISCORD_OPUS_SAMPLE_RATE_HZ) {
         return { path: filePath, cleanup: false };
       }
-    } catch {
-      // If probe fails, convert anyway
+    } catch (err: unknown) {
+      swallowed("If probe fails, convert anyway", err);
     }
   }
 

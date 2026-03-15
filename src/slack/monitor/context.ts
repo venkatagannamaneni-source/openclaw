@@ -7,6 +7,7 @@ import type { DmPolicy, GroupPolicy } from "../../config/types.js";
 import { logVerbose } from "../../globals.js";
 import { createDedupeCache } from "../../infra/dedupe.js";
 import { getChildLogger } from "../../logging.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { resolveAgentRoute } from "../../routing/resolve-route.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { SlackMessageEvent } from "../types.js";
@@ -185,8 +186,8 @@ export function createSlackMonitorContext(params: {
         });
         return route.sessionKey;
       }
-    } catch {
-      // Fall through to legacy key derivation.
+    } catch (err: unknown) {
+      swallowed("Fall through to legacy key derivation", err);
     }
 
     return resolveSessionKey(

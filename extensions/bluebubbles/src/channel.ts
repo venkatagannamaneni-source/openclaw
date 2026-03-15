@@ -181,8 +181,8 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
           if (parsed.kind === "handle") {
             return normalizeBlueBubblesHandle(parsed.to);
           }
-        } catch {
-          // Fall through
+        } catch (err: unknown) {
+          console.debug("[swallowed]", "Fall through", err);
         }
         // Strip common prefixes and try raw extraction
         const stripped = trimmed

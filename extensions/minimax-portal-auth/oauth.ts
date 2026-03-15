@@ -201,8 +201,8 @@ export async function loginMiniMaxPortalOAuth(params: {
 
   try {
     await params.openUrl(verificationUrl);
-  } catch {
-    // Fall back to manual copy/paste if browser open fails.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Fall back to manual copy/paste if browser open fails", err);
   }
 
   let pollIntervalMs = oauth.interval ? oauth.interval : 2000;

@@ -9,6 +9,7 @@ import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { recordChannelActivity } from "../infra/channel-activity.js";
 import type { RetryConfig } from "../infra/retry.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { convertMarkdownTables } from "../markdown/tables.js";
 import { maxBytesForKind } from "../media/constants.js";
 import { extensionForMime } from "../media/mime.js";
@@ -401,8 +402,8 @@ export async function sendWebhookMessageDiscord(
       accountId: account.accountId,
       direction: "outbound",
     });
-  } catch {
-    // Best-effort telemetry only.
+  } catch (err: unknown) {
+    swallowed("Best-effort telemetry only", err);
   }
   return {
     messageId: payload.id ? String(payload.id) : "unknown",

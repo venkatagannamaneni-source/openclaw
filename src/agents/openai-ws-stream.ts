@@ -32,6 +32,7 @@ import type {
   ToolCall,
 } from "@mariozechner/pi-ai";
 import { createAssistantMessageEventStream, streamSimple } from "@mariozechner/pi-ai";
+import { swallowed } from "../logging/swallowed.js";
 import {
   OpenAIWebSocketManager,
   type ContentPart,
@@ -81,8 +82,8 @@ export function releaseWsSession(sessionId: string): void {
   if (session) {
     try {
       session.manager.close();
-    } catch {
-      // Ignore close errors — connection may already be gone.
+    } catch (err: unknown) {
+      swallowed("Ignore close errors — connection may already be gone", err);
     }
     wsRegistry.delete(sessionId);
   }
@@ -637,8 +638,8 @@ export function createOpenAIWebSocketStreamFn(
           // Cancel any background reconnect attempts before marking as broken.
           try {
             session.manager.close();
-          } catch {
-            /* ignore */
+          } catch (err: unknown) {
+            swallowed("ignore", err);
           }
           session.broken = true;
           wsRegistry.delete(sessionId);
@@ -662,8 +663,8 @@ export function createOpenAIWebSocketStreamFn(
         // previousResponseId / lastContextLength after a mid-request drop.
         try {
           session.manager.close();
-        } catch {
-          /* ignore */
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
         wsRegistry.delete(sessionId);
         return fallbackToHttp(model, context, options, eventStream, opts.signal);
@@ -695,8 +696,8 @@ export function createOpenAIWebSocketStreamFn(
         if (warmupFailed && !session.manager.isConnected()) {
           try {
             session.manager.close();
-          } catch {
-            /* ignore */
+          } catch (err: unknown) {
+            swallowed("ignore", err);
           }
           try {
             await session.manager.connect(apiKey);
@@ -815,8 +816,8 @@ export function createOpenAIWebSocketStreamFn(
         // previous_response_id or lastContextLength from before the failure.
         try {
           session.manager.close();
-        } catch {
-          /* ignore */
+        } catch (err: unknown) {
+          swallowed("ignore", err);
         }
         wsRegistry.delete(sessionId);
         return fallbackToHttp(model, context, options, eventStream, opts.signal);

@@ -85,8 +85,8 @@ function persistSessionToken(gatewayUrl: string, token: string) {
       return;
     }
     storage.removeItem(key);
-  } catch {
-    // best-effort
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "best-effort", err);
   }
 }
 

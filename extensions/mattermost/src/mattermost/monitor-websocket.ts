@@ -201,8 +201,8 @@ export function createMattermostConnectOnce(
           });
           try {
             ws.close();
-          } catch {
-            /* best-effort: socket may already be closed */
+          } catch (err: unknown) {
+            console.debug("[swallowed]", "best-effort: socket may already be closed", err);
           }
         });
       });

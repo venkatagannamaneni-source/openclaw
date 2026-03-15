@@ -21,6 +21,7 @@ import { formatPortDiagnostics, inspectPortUsage } from "../../infra/ports.js";
 import { cleanStaleGatewayProcessesSync } from "../../infra/restart-stale-pids.js";
 import { setConsoleSubsystemFilter, setConsoleTimestampPrefix } from "../../logging/console.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import { inheritOptionFromParent } from "../command-options.js";
@@ -445,8 +446,8 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
             defaultRuntime.error(line);
           }
         }
-      } catch {
-        // ignore diagnostics failures
+      } catch (err: unknown) {
+        swallowed("ignore diagnostics failures", err);
       }
       await maybeExplainGatewayServiceStop();
       defaultRuntime.exit(1);

@@ -2,6 +2,7 @@ import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { formatDurationCompact } from "../infra/format-time/format-duration.ts";
 import { getDiagnosticSessionState } from "../logging/diagnostic-session-state.js";
+import { swallowed } from "../logging/swallowed.js";
 import { killProcessTree } from "../process/kill-tree.js";
 import { getProcessSupervisor } from "../process/supervisor/index.js";
 import {
@@ -111,8 +112,8 @@ function resetPollRetrySuggestion(sessionId: string): void {
   try {
     const sessionState = getDiagnosticSessionState({ sessionId });
     resetCommandPollCount(sessionState, sessionId);
-  } catch {
-    // Ignore diagnostics state failures for process tool behavior.
+  } catch (err: unknown) {
+    swallowed("Ignore diagnostics state failures for process tool behavior", err);
   }
 }
 

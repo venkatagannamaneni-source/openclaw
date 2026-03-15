@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { parseByteSize } from "../cli/parse-bytes.js";
 import type { CronConfig } from "../config/types.cron.js";
+import { swallowed } from "../logging/swallowed.js";
 import type { CronDeliveryStatus, CronRunStatus, CronRunTelemetry } from "./types.js";
 
 export type CronRunLogEntry = {
@@ -318,8 +319,8 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
         entry.sessionKey = obj.sessionKey;
       }
       parsed.push(entry);
-    } catch {
-      // ignore invalid lines
+    } catch (err: unknown) {
+      swallowed("ignore invalid lines", err);
     }
   }
   return parsed;

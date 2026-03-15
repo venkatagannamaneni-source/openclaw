@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { formatSandboxToolPolicyBlockedMessage } from "../sandbox.js";
 import { stableStringify } from "../stable-stringify.js";
 import {
@@ -519,8 +520,8 @@ function parseApiErrorPayload(raw: string): ErrorPayload | null {
       if (isErrorPayloadObject(parsed)) {
         return parsed;
       }
-    } catch {
-      // ignore parse errors
+    } catch (err: unknown) {
+      swallowed("ignore parse errors", err);
     }
   }
   return null;

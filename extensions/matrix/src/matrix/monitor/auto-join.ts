@@ -47,8 +47,8 @@ export function registerMatrixAutoJoin(params: {
         .catch(() => null);
       alias = aliasState?.alias;
       altAliases = Array.isArray(aliasState?.alt_aliases) ? aliasState.alt_aliases : [];
-    } catch {
-      // Ignore errors
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore errors", err);
     }
 
     const allowed =

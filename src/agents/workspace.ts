@@ -5,6 +5,7 @@ import path from "node:path";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { openBoundaryFile } from "../infra/boundary-file-read.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { swallowed } from "../logging/swallowed.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
@@ -314,8 +315,8 @@ async function ensureGitRepo(dir: string, isBrandNewWorkspace: boolean) {
   }
   try {
     await runCommandWithTimeout(["git", "init"], { cwd: dir, timeoutMs: 10_000 });
-  } catch {
-    // Ignore git init failures; workspace creation should still succeed.
+  } catch (err: unknown) {
+    swallowed("Ignore git init failures; workspace creation should still succeed", err);
   }
 }
 
@@ -418,8 +419,8 @@ export async function ensureAgentWorkspace(params?: {
         try {
           await fs.access(indicator);
           return true;
-        } catch {
-          // continue
+        } catch (err: unknown) {
+          swallowed("continue", err);
         }
       }
       return false;
@@ -472,8 +473,8 @@ async function resolveMemoryBootstrapEntries(
     try {
       await fs.access(filePath);
       entries.push({ name, filePath });
-    } catch {
-      // optional
+    } catch (err: unknown) {
+      swallowed("optional", err);
     }
   }
   if (entries.length <= 1) {
@@ -486,8 +487,8 @@ async function resolveMemoryBootstrapEntries(
     let key = entry.filePath;
     try {
       key = await fs.realpath(entry.filePath);
-    } catch {
-      /* best-effort: path may not exist; use original path as key */
+    } catch (err: unknown) {
+      swallowed("best-effort: path may not exist; use original path as key", err);
     }
     if (seen.has(key)) {
       continue;

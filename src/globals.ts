@@ -1,4 +1,5 @@
 import { getLogger, isFileLogLevelEnabled } from "./logging/logger.js";
+import { swallowed } from "./logging/swallowed.js";
 import { theme } from "./terminal/theme.js";
 
 let globalVerbose = false;
@@ -22,8 +23,8 @@ export function logVerbose(message: string) {
   }
   try {
     getLogger().debug({ message }, "verbose");
-  } catch {
-    // ignore logger failures to avoid breaking verbose printing
+  } catch (err: unknown) {
+    swallowed("ignore logger failures to avoid breaking verbose printing", err);
   }
   if (!globalVerbose) {
     return;

@@ -1,4 +1,5 @@
 import os from "node:os";
+import { swallowed } from "../logging/swallowed.js";
 import { runCommandWithTimeout, runExec } from "../process/exec.js";
 
 function resolveLoginctlUser(env: Record<string, string | undefined>): string | null {
@@ -37,8 +38,8 @@ export async function readSystemdUserLingerStatus(
     if (value === "yes" || value === "no") {
       return { user, linger: value };
     }
-  } catch {
-    // ignore; loginctl may be unavailable
+  } catch (err: unknown) {
+    swallowed("ignore; loginctl may be unavailable", err);
   }
   return null;
 }

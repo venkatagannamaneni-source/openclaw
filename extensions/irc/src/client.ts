@@ -244,8 +244,8 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       } else {
         sendRaw("QUIT");
       }
-    } catch {
-      // Ignore quit failures while shutting down.
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Ignore quit failures while shutting down", err);
     }
     socket.end();
   };

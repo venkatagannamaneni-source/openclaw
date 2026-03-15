@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileTypeFromBuffer } from "file-type";
+import { swallowed } from "../logging/swallowed.js";
 import { type MediaKind, mediaKindFromMime } from "./constants.js";
 
 // Map common mimes to preferred file extensions.
@@ -86,8 +87,8 @@ export function getFileExtension(filePath?: string | null): string | undefined {
       const url = new URL(filePath);
       return path.extname(url.pathname).toLowerCase() || undefined;
     }
-  } catch {
-    // fall back to plain path parsing
+  } catch (err: unknown) {
+    swallowed("fall back to plain path parsing", err);
   }
   const ext = path.extname(filePath).toLowerCase();
   return ext || undefined;

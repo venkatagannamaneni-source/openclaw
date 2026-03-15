@@ -262,8 +262,8 @@ export function registerVoiceCallCli(params: {
               fs.closeSync(fd);
             }
           }
-        } catch {
-          // ignore and retry
+        } catch (err: unknown) {
+          console.debug("[swallowed]", "ignore and retry", err);
         }
         await sleep(pollMs);
       }
@@ -301,8 +301,8 @@ export function registerVoiceCallCli(params: {
           if (typeof listenWait === "number" && Number.isFinite(listenWait)) {
             listenWaitMs.push(listenWait);
           }
-        } catch {
-          // ignore malformed JSON lines
+        } catch (err: unknown) {
+          console.debug("[swallowed]", "ignore malformed JSON lines", err);
         }
       }
 

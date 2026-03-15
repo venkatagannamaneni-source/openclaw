@@ -1,3 +1,5 @@
+import { swallowed } from "../logging/swallowed.js";
+
 const MAX_ALLOWED_VALUES_HINT = 12;
 const MAX_ALLOWED_VALUE_CHARS = 160;
 
@@ -20,8 +22,8 @@ function safeStringify(value: unknown): string {
     if (serialized !== undefined) {
       return serialized;
     }
-  } catch {
-    // Fall back to string coercion when value is not JSON-serializable.
+  } catch (err: unknown) {
+    swallowed("Fall back to string coercion when value is not JSON-serializable", err);
   }
   return String(value);
 }

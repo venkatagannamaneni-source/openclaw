@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { swallowed } from "../logging/swallowed.js";
 
 export const DEFAULT_REPO_SCAN_SKIP_DIR_NAMES = new Set([".git", "dist", "node_modules"]);
 export const DEFAULT_RUNTIME_SOURCE_ROOTS = ["src", "extensions"] as const;
@@ -72,8 +73,8 @@ export async function listRepoFiles(
       if (stats.isDirectory()) {
         pending.push({ absolutePath });
       }
-    } catch {
-      // Skip missing roots. Useful when extensions/ is absent.
+    } catch (err: unknown) {
+      swallowed("Skip missing roots. Useful when extensions/ is absent", err);
     }
   }
 

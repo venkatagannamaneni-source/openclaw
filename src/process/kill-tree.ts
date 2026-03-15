@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { swallowed } from "../logging/swallowed.js";
 
 const DEFAULT_GRACE_MS = 3000;
 const MAX_GRACE_MS = 60_000;
@@ -63,8 +64,8 @@ function killProcessTreeUnix(pid: number, graceMs: number): void {
       try {
         process.kill(-pid, "SIGKILL");
         return;
-      } catch {
-        // Fall through to direct pid kill
+      } catch (err: unknown) {
+        swallowed("Fall through to direct pid kill", err);
       }
     }
     if (!isProcessAlive(pid)) {
@@ -72,8 +73,8 @@ function killProcessTreeUnix(pid: number, graceMs: number): void {
     }
     try {
       process.kill(pid, "SIGKILL");
-    } catch {
-      // Process exited between liveness check and kill
+    } catch (err: unknown) {
+      swallowed("Process exited between liveness check and kill", err);
     }
   }, graceMs).unref(); // Don't block event loop exit
 }
@@ -84,8 +85,8 @@ function runTaskkill(args: string[]): void {
       stdio: "ignore",
       detached: true,
     });
-  } catch {
-    // Ignore taskkill spawn failures
+  } catch (err: unknown) {
+    swallowed("Ignore taskkill spawn failures", err);
   }
 }
 

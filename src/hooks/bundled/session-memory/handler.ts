@@ -16,6 +16,7 @@ import type { OpenClawConfig } from "../../../config/config.js";
 import { resolveStateDir } from "../../../config/paths.js";
 import { writeFileWithinRoot } from "../../../infra/fs-safe.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
+import { swallowed } from "../../../logging/swallowed.js";
 import {
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
@@ -81,8 +82,8 @@ async function getRecentSessionContent(
             }
           }
         }
-      } catch {
-        // Skip invalid JSON lines
+      } catch (err: unknown) {
+        swallowed("Skip invalid JSON lines", err);
       }
     }
 
@@ -187,8 +188,8 @@ async function findPreviousSessionFile(params: {
     if (nonResetJsonl.length > 0) {
       return path.join(params.sessionsDir, nonResetJsonl[0]);
     }
-  } catch {
-    // Ignore directory read errors.
+  } catch (err: unknown) {
+    swallowed("Ignore directory read errors", err);
   }
   return undefined;
 }

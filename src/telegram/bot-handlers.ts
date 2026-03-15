@@ -30,6 +30,7 @@ import type {
 import { danger, logVerbose, warn } from "../globals.js";
 import { bestEffortCatch } from "../infra/best-effort.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
+import { swallowed } from "../logging/swallowed.js";
 import { MediaFetchError } from "../media/fetch.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { resolveAgentRoute } from "../routing/resolve-route.js";
@@ -1284,8 +1285,8 @@ export const registerTelegramHandlers = ({
             if (errStr.includes("no text in the message")) {
               try {
                 await deleteCallbackMessage();
-              } catch {
-                /* best-effort: message may already be deleted */
+              } catch (err: unknown) {
+                swallowed("best-effort: message may already be deleted", err);
               }
               await replyToCallbackChat(text, keyboard ? { reply_markup: keyboard } : undefined);
             } else if (!errStr.includes("message is not modified")) {

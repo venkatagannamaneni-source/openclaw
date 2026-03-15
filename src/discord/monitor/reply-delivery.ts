@@ -6,6 +6,7 @@ import type { OpenClawConfig } from "../../config/config.js";
 import type { MarkdownTableMode, ReplyToMode } from "../../config/types.base.js";
 import { createDiscordRetryRunner, type RetryRunner } from "../../infra/retry-policy.js";
 import { resolveRetryConfig, retryAsync, type RetryConfig } from "../../infra/retry.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { convertMarkdownTables } from "../../markdown/tables.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
@@ -166,8 +167,8 @@ async function sendDiscordChunkWithFallback(params: {
         avatarUrl: params.avatarUrl,
       });
       return;
-    } catch {
-      // Fall through to the standard bot sender path.
+    } catch (err: unknown) {
+      swallowed("Fall through to the standard bot sender path", err);
     }
   }
   // When channelId and request are pre-resolved, send directly via sendDiscordText

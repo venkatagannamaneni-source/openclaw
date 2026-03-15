@@ -147,8 +147,8 @@ export async function prepareImageInfo(params: {
           size: thumbBuffer.byteLength,
         };
       }
-    } catch {
-      // Thumbnail generation failed, continue without it
+    } catch (err: unknown) {
+      console.debug("[swallowed]", "Thumbnail generation failed, continue without it", err);
     }
   }
   return imageInfo;
@@ -181,8 +181,8 @@ export async function resolveMediaDurationMs(params: {
     if (typeof durationSeconds === "number" && Number.isFinite(durationSeconds)) {
       return Math.max(0, Math.round(durationSeconds * 1000));
     }
-  } catch {
-    // Duration is optional; ignore parse failures.
+  } catch (err: unknown) {
+    console.debug("[swallowed]", "Duration is optional; ignore parse failures", err);
   }
   return undefined;
 }

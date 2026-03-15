@@ -1,3 +1,4 @@
+import { swallowed } from "../logging/swallowed.js";
 import {
   loadSubagentRegistryFromDisk,
   saveSubagentRegistryToDisk,
@@ -7,8 +8,8 @@ import type { SubagentRunRecord } from "./subagent-registry.types.js";
 export function persistSubagentRunsToDisk(runs: Map<string, SubagentRunRecord>) {
   try {
     saveSubagentRegistryToDisk(runs);
-  } catch {
-    // ignore persistence failures
+  } catch (err: unknown) {
+    swallowed("ignore persistence failures", err);
   }
 }
 
@@ -45,8 +46,8 @@ export function getSubagentRunsSnapshotForRead(
       for (const [runId, entry] of loadSubagentRegistryFromDisk().entries()) {
         merged.set(runId, entry);
       }
-    } catch {
-      // Ignore disk read failures and fall back to local memory.
+    } catch (err: unknown) {
+      swallowed("Ignore disk read failures and fall back to local memory", err);
     }
   }
   for (const [runId, entry] of inMemoryRuns.entries()) {

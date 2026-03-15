@@ -1,3 +1,5 @@
+import { swallowed } from "../logging/swallowed.js";
+
 type SessionTranscriptUpdate = {
   sessionFile: string;
 };
@@ -22,8 +24,8 @@ export function emitSessionTranscriptUpdate(sessionFile: string): void {
   for (const listener of SESSION_TRANSCRIPT_LISTENERS) {
     try {
       listener(update);
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      swallowed("ignore", err);
     }
   }
 }

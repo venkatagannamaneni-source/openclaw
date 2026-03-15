@@ -19,6 +19,7 @@ import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import {
@@ -322,8 +323,8 @@ export async function runReplyAgent(params: {
       for (const candidate of transcriptCandidates) {
         try {
           fs.unlinkSync(candidate);
-        } catch {
-          // Best-effort cleanup.
+        } catch (err: unknown) {
+          swallowed("Best-effort cleanup", err);
         }
       }
     }

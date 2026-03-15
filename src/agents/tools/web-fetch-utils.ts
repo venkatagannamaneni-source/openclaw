@@ -1,3 +1,4 @@
+import { swallowed } from "../../logging/swallowed.js";
 import { sanitizeHtml, stripInvisibleUnicode } from "./web-fetch-visibility.js";
 
 export type ExtractMode = "markdown" | "text";
@@ -233,8 +234,8 @@ export async function extractReadableContent(params: {
     const { document } = parseHTML(cleanHtml);
     try {
       (document as { baseURI?: string }).baseURI = params.url;
-    } catch {
-      // Best-effort base URI for relative links.
+    } catch (err: unknown) {
+      swallowed("Best-effort base URI for relative links", err);
     }
     const reader = new Readability(document, { charThreshold: 0 });
     const parsed = reader.parse();

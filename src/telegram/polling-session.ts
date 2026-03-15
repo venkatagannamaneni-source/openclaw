@@ -2,6 +2,7 @@ import { type RunOptions, run } from "@grammyjs/runner";
 import { computeBackoff, sleepWithAbort } from "../infra/backoff.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { formatDurationPrecise } from "../infra/format-time/format-duration.ts";
+import { swallowed } from "../logging/swallowed.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { createTelegramBot } from "./bot.js";
 import { isRecoverableTelegramNetworkError } from "./network-errors.js";
@@ -173,8 +174,8 @@ export class TelegramPollingSession {
     }
     try {
       await bot.api.getUpdates({ offset: lastUpdateId + 1, limit: 1, timeout: 0 });
-    } catch {
-      // Non-fatal: runner middleware still skips duplicates via shouldSkipUpdate.
+    } catch (err: unknown) {
+      swallowed("Non-fatal: runner middleware still skips duplicates via shouldSkipUpdate", err);
     }
   }
 

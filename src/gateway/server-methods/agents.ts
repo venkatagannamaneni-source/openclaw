@@ -31,6 +31,7 @@ import { sameFileIdentity } from "../../infra/file-identity.js";
 import { SafeOpenError, readLocalFileSafely, writeFileWithinRoot } from "../../infra/fs-safe.js";
 import { assertNoPathAliasEscape } from "../../infra/path-alias-guards.js";
 import { isNotFoundPathError } from "../../infra/path-guards.js";
+import { swallowed } from "../../logging/swallowed.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
 import {
@@ -399,8 +400,8 @@ async function moveToTrashBestEffort(pathname: string): Promise<void> {
   }
   try {
     await movePathToTrash(pathname);
-  } catch {
-    // Best-effort: path may already be gone or trash unavailable.
+  } catch (err: unknown) {
+    swallowed("Best-effort: path may already be gone or trash unavailable", err);
   }
 }
 
@@ -654,8 +655,8 @@ export const agentsHandlers: GatewayRequestHandlers = {
     let hideBootstrap = false;
     try {
       hideBootstrap = await isWorkspaceOnboardingCompleted(workspaceDir);
-    } catch {
-      // Fall back to showing BOOTSTRAP if workspace state cannot be read.
+    } catch (err: unknown) {
+      swallowed("Fall back to showing BOOTSTRAP if workspace state cannot be read", err);
     }
     const files = await listAgentFiles(workspaceDir, { hideBootstrap });
     respond(true, { agentId, workspace: workspaceDir, files }, undefined);
