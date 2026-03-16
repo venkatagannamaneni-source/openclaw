@@ -248,6 +248,10 @@ export type HookAgentPayload = {
   model?: string;
   thinking?: string;
   timeoutSeconds?: number;
+  /** URL to POST agent run results to when the run completes. */
+  callbackUrl?: string;
+  /** Bearer token sent in the Authorization header of the callback POST. */
+  callbackToken?: string;
 };
 
 export type HookAgentDispatchPayload = Omit<HookAgentPayload, "sessionKey"> & {
@@ -407,6 +411,17 @@ export function normalizeAgentPayload(payload: Record<string, unknown>):
     typeof timeoutRaw === "number" && Number.isFinite(timeoutRaw) && timeoutRaw > 0
       ? Math.floor(timeoutRaw)
       : undefined;
+  const callbackUrlRaw = payload.callbackUrl;
+  const callbackUrl =
+    typeof callbackUrlRaw === "string" && callbackUrlRaw.trim() ? callbackUrlRaw.trim() : undefined;
+  if (callbackUrl && !callbackUrl.startsWith("https://")) {
+    return { ok: false, error: "callbackUrl must use https://" };
+  }
+  const callbackTokenRaw = payload.callbackToken;
+  const callbackToken =
+    typeof callbackTokenRaw === "string" && callbackTokenRaw.trim()
+      ? callbackTokenRaw.trim()
+      : undefined;
   return {
     ok: true,
     value: {
@@ -421,6 +436,8 @@ export function normalizeAgentPayload(payload: Record<string, unknown>):
       model,
       thinking,
       timeoutSeconds,
+      callbackUrl,
+      callbackToken,
     },
   };
 }

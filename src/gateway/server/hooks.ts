@@ -66,6 +66,26 @@ export function createGatewayHooksRequestHandler(params: {
     };
 
     const runId = randomUUID();
+    const postCallback = async (body: Record<string, unknown>) => {
+      if (!value.callbackUrl) return;
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (value.callbackToken) {
+          headers["Authorization"] = `Bearer ${value.callbackToken}`;
+        }
+        const resp = await fetch(value.callbackUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ runId, ...body }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!resp.ok) {
+          logHooks.warn(`hook callback failed: ${resp.status} ${resp.statusText}`);
+        }
+      } catch (cbErr) {
+        logHooks.warn(`hook callback error: ${String(cbErr)}`);
+      }
+    };
     void (async () => {
       try {
         const cfg = loadConfig();
@@ -89,6 +109,14 @@ export function createGatewayHooksRequestHandler(params: {
             requestHeartbeatNow({ reason: `hook:${jobId}` });
           }
         }
+        await postCallback({
+          status: result.status,
+          summary: result.summary,
+          outputText: result.outputText,
+          delivered: result.delivered ?? false,
+          error: result.error ?? null,
+          sessionKey,
+        });
       } catch (err) {
         logHooks.warn(`hook agent failed: ${String(err)}`);
         enqueueSystemEvent(`Hook ${value.name} (error): ${String(err)}`, {
@@ -97,6 +125,7 @@ export function createGatewayHooksRequestHandler(params: {
         if (value.wakeMode === "now") {
           requestHeartbeatNow({ reason: `hook:${jobId}:error` });
         }
+        await postCallback({ status: "error", error: String(err) });
       }
     })();
 

@@ -530,6 +530,15 @@ export function createHooksRequestHandler(
             return true;
           }
           const targetAgentId = resolveHookTargetAgentId(hooksConfig, mapped.action.agentId);
+          const rawPayload = payload as Record<string, unknown>;
+          const callbackUrl =
+            typeof rawPayload.callbackUrl === "string" && rawPayload.callbackUrl.trim()
+              ? rawPayload.callbackUrl.trim()
+              : undefined;
+          const callbackToken =
+            typeof rawPayload.callbackToken === "string" && rawPayload.callbackToken.trim()
+              ? rawPayload.callbackToken.trim()
+              : undefined;
           const runId = dispatchAgentHook({
             message: mapped.action.message,
             name: mapped.action.name ?? "Hook",
@@ -546,6 +555,8 @@ export function createHooksRequestHandler(
             thinking: mapped.action.thinking,
             timeoutSeconds: mapped.action.timeoutSeconds,
             allowUnsafeExternalContent: mapped.action.allowUnsafeExternalContent,
+            callbackUrl,
+            callbackToken,
           });
           sendJson(res, 200, { ok: true, runId });
           return true;
